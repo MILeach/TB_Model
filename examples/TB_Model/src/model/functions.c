@@ -394,9 +394,14 @@ void initAgentTypes() {
 		h_allocate_agent_TransportMembership_array(h_trmembership_AoS_MAX);
 }
 
-void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
-	float max_age = *get_MAX_AGE();
-	float starting_population = *get_STARTING_POPULATION();
+/* Each of the 'decide' functions have no dependency on any other agent. They each use a randomly generated number & set of probabilities to decide the properties of the person.
+   For example, their ages, whether they go to bars, how often they use transport. Many of the functions write the agent id into an array which is then later used by the
+   allocation functions. This writing to the list is the only bit which might not work well on GPU/in parallel - needs more attention - possibly messages are a good fit for this. 
+   Some also track global counters - would typically be done in step function I guess? Maybe with function condition so only runs once*. But some write to multiple arrays and we 
+   can only have one message - Need to check how it is used - could it be stored on agent instead or mapped with a single message, or separated into individual functions which 
+   produce multiple messages between them. */
+
+void decideAgeHivArt(xmachine_memory_Person *h_person, DataHolder& dh, const PopulationInfo& populationInfo, int minage, int maxage, int gender) {
 
 	float rr_as_f_46 = *get_RR_AS_F_46();
 	float rr_as_f_26 = *get_RR_AS_F_26();
@@ -405,17 +410,200 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 	float rr_as_m_26 = *get_RR_AS_M_26();
 	float rr_as_m_18 = *get_RR_AS_M_18();
 
+	float starting_population = *get_STARTING_POPULATION();
+	float hiv_prevalence = *get_HIV_PREVALENCE();
+	float art_coverage = *get_ART_COVERAGE();
+	float rr_hiv = *get_RR_HIV();
+	float rr_art = *get_RR_ART();
+	float hivprob = hiv_prevalence * starting_population / populationInfo.numAdults;
+	
+	float random = ((float)rand() / (RAND_MAX));
+
+	float rr_as;
+	float weight;
+
+	// Pick a random age for the person between the bounds of the age
+				// interval they belong to.
+	int age = (rand() % (maxage + 1 - minage)) + minage;
+	h_person->age = age;
+
+	// Decide risk based on age & gender
+	if (gender == 2)
+	{
+		if (age >= 46)
+		{
+			rr_as = rr_as_f_46;
+		}
+		else if (age >= 26)
+		{
+			rr_as = rr_as_f_26;
+		}
+		else if (age >= 18)
+		{
+			rr_as = rr_as_f_18;
+		}
+		else
+		{
+			rr_as = 0.00;
+		}
+	}
+	else
+	{
+		if (age >= 46)
+		{
+			rr_as = rr_as_m_46;
+		}
+		else if (age >= 26)
+		{
+			rr_as = rr_as_m_26;
+		}
+		else if (age >= 18)
+		{
+			rr_as = rr_as_m_18;
+		}
+		else
+		{
+			rr_as = 0.00;
+		}
+	}
+
+	// Decide if user has hiv/art
+	random = ((float)rand() / (RAND_MAX));
+
+	if ((random < hivprob) && (h_person->age >= 18))
+	{
+		h_person->hiv = 1;
+
+		random = ((float)rand() / (RAND_MAX));
+		if (random < art_coverage)
+		{
+			h_person->art = 1;
+			weight = rr_as * rr_hiv * rr_art;
+
+			unsigned int randomday = rand() % 28;
+
+			while (randomday % 7 == 0 || randomday % 7 == 6)
+			{
+				randomday = rand() % 28;
+			}
+
+			h_person->artday = randomday;
+		}
+		else
+		{
+			h_person->art = 0;
+			weight = rr_as * rr_hiv;
+		}
+	}
+	else
+	{
+		h_person->hiv = 0;
+		h_person->art = 0;
+		weight = rr_as;
+	}
+
+	dh.weights[h_person->id - 1] = weight;
+
+	// Update the arrays of information with this person's household size
+	// and age.
+	dh.ages[h_person->id - 1] = age;
+}
+
+void decideTransport(xmachine_memory_Person *h_person, DataHolder& dh) {
+	// Decide whether the person is a transport user based on given input
+					// probabilities.
 	float transport_beta0 = *get_TRANSPORT_BETA0();
 	float transport_beta1 = *get_TRANSPORT_BETA1();
-
 	float transport_freq0 = *get_TRANSPORT_FREQ0();
 	float transport_freq2 = *get_TRANSPORT_FREQ2();
 
+	float random = ((float)rand() / (RAND_MAX));
+	float useprob =
+		1.0 / (1 + exp(-transport_beta0 - (transport_beta1 * h_person->age)));
+
+	unsigned int transportuser;
+	if (random < useprob)
+	{
+		transportuser = 1;
+	}
+	else
+	{
+		transportuser = 0;
+	}
+
+	// If the person is a transport user, pick a transport frequency and
+	// duration for them based on input probabilities; otherwise, set these
+	// variables to a dummy value.
+	if (transportuser)
+	{
+		random = ((float)rand() / (RAND_MAX));
+
+		if (random < transport_freq0)
+		{
+		}
+		else if (random < transport_freq2)
+		{
+			h_person->transportday1 = (rand() % 5) + 1;
+			h_person->transportday2 = -1;
+
+			dh.transport[dh.daycount] = h_person->id;
+			dh.days[dh.daycount] = h_person->transportday1;
+
+			dh.daycount++;
+		}
+		else
+		{
+			h_person->transportday1 = (rand() % 5) + 1;
+			h_person->transportday2 = h_person->transportday1;
+
+			while (h_person->transportday2 == h_person->transportday1)
+			{
+				h_person->transportday2 = (rand() % 5) + 1;
+			}
+
+			dh.transport[dh.daycount] = h_person->id;
+			dh.days[dh.daycount] = h_person->transportday1;
+
+			dh.daycount++;
+
+			dh.transport[dh.daycount] = h_person->id;
+			dh.days[dh.daycount] = h_person->transportday2;
+
+			dh.daycount++;
+		}
+	}
+	else
+	{
+		h_person->transport = -1;
+		h_person->transportday1 = -1;
+		h_person->transportday2 = -1;
+	}
+}
+
+void decideWork(xmachine_memory_Person *h_person, DataHolder& dh) {
 	float workplace_beta0 = *get_WORKPLACE_BETA0();
 	float workplace_betaa = *get_WORKPLACE_BETAA();
 	float workplace_betas = *get_WORKPLACE_BETAS();
 	float workplace_betaas = *get_WORKPLACE_BETAAS();
 
+	unsigned int sex = h_person->gender % 2;
+	float random = ((float)rand() / (RAND_MAX));
+	float workprob =
+		1.0 /
+		(1 + exp(-workplace_beta0 - (workplace_betaa * h_person->age) -
+		(workplace_betas * sex) -
+			(workplace_betaas * sex * h_person->age)));
+
+	random = ((float)rand() / (RAND_MAX));
+
+	if (random < workprob && h_person->age >= 18)
+	{
+		dh.workarray[dh.employedcount] = h_person->id;
+		dh.employedcount++;
+	}
+}
+
+void decideBar(xmachine_memory_Person *h_person, DataHolder& dh) {
 	float bar_m_prob1 = *get_BAR_M_PROB1();
 	float bar_m_prob2 = *get_BAR_M_PROB2();
 	float bar_m_prob3 = *get_BAR_M_PROB3();
@@ -434,15 +622,122 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 	float bar_betas = *get_BAR_BETAS();
 	float bar_betaas = *get_BAR_BETAAS();
 
-	float hiv_prevalence = *get_HIV_PREVALENCE();
-	float art_coverage = *get_ART_COVERAGE();
-	float rr_hiv = *get_RR_HIV();
-	float rr_art = *get_RR_ART();
+	unsigned int sex = h_person->gender % 2;
+	float barprob =
+		1.0 /
+		(1 + exp(-bar_beta0 - (bar_betaa * h_person->age) -
+		(bar_betas * sex) - (bar_betaas * sex * h_person->age)));
 
-	float hivprob = hiv_prevalence * starting_population / populationInfo.numAdults;
+	float random = ((float)rand() / (RAND_MAX));
+
+	if (random < barprob && h_person->age >= 18)
+	{
+		random = ((float)rand() / (RAND_MAX));
+		h_person->bargoing = 1;
+
+		if (sex == 0)
+		{
+			if (random < bar_f_prob1)
+			{
+				h_person->barday = 1;
+				dh.barcount++;
+			}
+			else if (random < bar_f_prob2)
+			{
+				h_person->barday = 2;
+				dh.barcount += 2;
+			}
+			else if (random < bar_f_prob3)
+			{
+				h_person->barday = 3;
+				dh.barcount += 3;
+			}
+			else if (random < bar_f_prob4)
+			{
+				h_person->barday = 4;
+				dh.barcount += 4;
+			}
+			else if (random < bar_f_prob5)
+			{
+				h_person->barday = 5;
+				dh.barcount += 5;
+			}
+			else if (random < bar_f_prob7)
+			{
+				h_person->barday = 7;
+				dh.barcount += 7;
+			}
+			else
+			{
+				h_person->bargoing = 2;
+				h_person->barday = rand() % 28;
+			}
+		}
+		else // Sex != 0 
+		{
+			if (random < bar_m_prob1)
+			{
+				h_person->barday = 1;
+				dh.barcount++;
+			}
+			else if (random < bar_m_prob2)
+			{
+				h_person->barday = 2;
+				dh.barcount += 2;
+			}
+			else if (random < bar_m_prob3)
+			{
+				h_person->barday = 3;
+				dh.barcount += 3;
+			}
+			else if (random < bar_m_prob4)
+			{
+				h_person->barday = 4;
+				dh.barcount += 4;
+			}
+			else if (random < bar_m_prob5)
+			{
+				h_person->barday = 5;
+				dh.barcount += 5;
+			}
+			else if (random < bar_m_prob7)
+			{
+				h_person->barday = 7;
+				dh.barcount += 7;
+			}
+			else
+			{
+				h_person->bargoing = 2;
+				h_person->barday = rand() % 28;
+			}
+		}
+	}
+	else
+	{
+		h_person->bargoing = 0;
+	}
+}
+
+void decideSchool(xmachine_memory_Person *h_person, DataHolder& dh) {
+	// If the person is younger than 18, list them as requiring a school
+	if (h_person->age < 18)
+	{
+		dh.schoolarray[dh.childcount] = h_person->id;
+		dh.childcount++;
+	}
+}
+
+/* Init people generates the person agents. If there is a good way to allocate initial categories to agents, all of this could be done based on a generic population file/set of agents.
+   Each agent is capable of initialising itself as long as it knows its gender and categroy + has access to the min/max ages for the category. This could possibly be achieved by submitting
+   a list of id ranges for each category + household size on initialisation, from which each agent could draw the correct values. Another possibility is generating sets of agents using a
+   different kernel invocation for each, though unsure how well this fits with FLAME. Could have 'category' agents which output a message giving their parameters which can be read by person
+   agents. Category agents could then delete themselves after initialisation. */
+void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
+	float max_age = *get_MAX_AGE();
+	float starting_population = *get_STARTING_POPULATION();
 
 	// This loop runs once for each age/gender category, so once for every row in
- // the histogram.
+	// the histogram.
 	for (unsigned int i = 0; i < populationInfo.numAgeGenderCategories; i++)
 	{
 		int gender = populationInfo.ageGenderCategories[i].gender;
@@ -470,292 +765,26 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 			float frac = amount / populationInfo.totalPopulationSize;
 			unsigned int rounded = round((amount / populationInfo.totalPopulationSize) * starting_population);
 
-
-
 			// This loop runs once for each individual person, and so this is where we
 			// generate the person agents.
 			for (unsigned int k = 0; k < rounded; k++)
 			{
-
-				// Pick a random float between 0 and 1, used for deciding whether the
-				// person is a transport user.
-				float random = ((float)rand() / (RAND_MAX));
-
-				float rr_as;
-				float weight;
-
 				// Allocate memory for the agent we are generating.
 				xmachine_memory_Person *h_person = h_allocate_agent_Person();
-
-				// Pick a random age for the person between the bounds of the age
-				// interval they belong to.
-				int age = (rand() % (maxage + 1 - minage)) + minage;
-
-				if (gender == 2)
-				{
-					if (age >= 46)
-					{
-						rr_as = rr_as_f_46;
-					}
-					else if (age >= 26)
-					{
-						rr_as = rr_as_f_26;
-					}
-					else if (age >= 18)
-					{
-						rr_as = rr_as_f_18;
-					}
-					else
-					{
-						rr_as = 0.00;
-					}
-				}
-				else
-				{
-					if (age >= 46)
-					{
-						rr_as = rr_as_m_46;
-					}
-					else if (age >= 26)
-					{
-						rr_as = rr_as_m_26;
-					}
-					else if (age >= 18)
-					{
-						rr_as = rr_as_m_18;
-					}
-					else
-					{
-						rr_as = 0.00;
-					}
-				}
 
 				// Assign the variables for the person agent based on information from
 				// the histogram.
 				h_person->id = getNextID();
-				h_person->age = age;
 				h_person->gender = gender;
 				h_person->householdsize = currentsize;
 				h_person->busy = 0;
 
-				// Decide whether the person is a transport user based on given input
-				// probabilities.
-				float useprob =
-					1.0 / (1 + exp(-transport_beta0 - (transport_beta1 * age)));
+				decideAgeHivArt(h_person, dh, populationInfo, minage, maxage, gender);
+				decideTransport(h_person, dh);
+				decideWork(h_person, dh);
+				decideBar(h_person, dh);
+				decideSchool(h_person, dh);
 
-				unsigned int transportuser;
-				if (random < useprob)
-				{
-					transportuser = 1;
-				}
-				else
-				{
-					transportuser = 0;
-				}
-
-				// If the person is a transport user, pick a transport frequency and
-				// duration for them based on input probabilities; otherwise, set these
-				// variables to a dummy value.
-				if (transportuser)
-				{
-					random = ((float)rand() / (RAND_MAX));
-
-					if (random < transport_freq0)
-					{
-					}
-					else if (random < transport_freq2)
-					{
-						h_person->transportday1 = (rand() % 5) + 1;
-						h_person->transportday2 = -1;
-
-						dh.transport[dh.daycount] = h_person->id;
-						dh.days[dh.daycount] = h_person->transportday1;
-
-						dh.daycount++;
-					}
-					else
-					{
-						h_person->transportday1 = (rand() % 5) + 1;
-						h_person->transportday2 = h_person->transportday1;
-
-						while (h_person->transportday2 == h_person->transportday1)
-						{
-							h_person->transportday2 = (rand() % 5) + 1;
-						}
-
-						dh.transport[dh.daycount] = h_person->id;
-						dh.days[dh.daycount] = h_person->transportday1;
-
-						dh.daycount++;
-
-						dh.transport[dh.daycount] = h_person->id;
-						dh.days[dh.daycount] = h_person->transportday2;
-
-						dh.daycount++;
-					}
-				}
-				else
-				{
-					h_person->transport = -1;
-					h_person->transportday1 = -1;
-					h_person->transportday2 = -1;
-				}
-
-				unsigned int sex = h_person->gender % 2;
-				float workprob =
-					1.0 /
-					(1 + exp(-workplace_beta0 - (workplace_betaa * h_person->age) -
-					(workplace_betas * sex) -
-						(workplace_betaas * sex * h_person->age)));
-
-				random = ((float)rand() / (RAND_MAX));
-
-				if (random < workprob && h_person->age >= 18)
-				{
-					dh.workarray[dh.employedcount] = h_person->id;
-					dh.employedcount++;
-				}
-
-				float barprob =
-					1.0 /
-					(1 + exp(-bar_beta0 - (bar_betaa * h_person->age) -
-					(bar_betas * sex) - (bar_betaas * sex * h_person->age)));
-
-				random = ((float)rand() / (RAND_MAX));
-
-				if (random < barprob && h_person->age >= 18)
-				{
-					random = ((float)rand() / (RAND_MAX));
-					h_person->bargoing = 1;
-
-					if (sex == 0)
-					{
-						if (random < bar_f_prob1)
-						{
-							h_person->barday = 1;
-							dh.barcount++;
-						}
-						else if (random < bar_f_prob2)
-						{
-							h_person->barday = 2;
-							dh.barcount += 2;
-						}
-						else if (random < bar_f_prob3)
-						{
-							h_person->barday = 3;
-							dh.barcount += 3;
-						}
-						else if (random < bar_f_prob4)
-						{
-							h_person->barday = 4;
-							dh.barcount += 4;
-						}
-						else if (random < bar_f_prob5)
-						{
-							h_person->barday = 5;
-							dh.barcount += 5;
-						}
-						else if (random < bar_f_prob7)
-						{
-							h_person->barday = 7;
-							dh.barcount += 7;
-						}
-						else
-						{
-							h_person->bargoing = 2;
-							h_person->barday = rand() % 28;
-						}
-					}
-					else // Sex != 0 
-					{
-						if (random < bar_m_prob1)
-						{
-							h_person->barday = 1;
-							dh.barcount++;
-						}
-						else if (random < bar_m_prob2)
-						{
-							h_person->barday = 2;
-							dh.barcount += 2;
-						}
-						else if (random < bar_m_prob3)
-						{
-							h_person->barday = 3;
-							dh.barcount += 3;
-						}
-						else if (random < bar_m_prob4)
-						{
-							h_person->barday = 4;
-							dh.barcount += 4;
-						}
-						else if (random < bar_m_prob5)
-						{
-							h_person->barday = 5;
-							dh.barcount += 5;
-						}
-						else if (random < bar_m_prob7)
-						{
-							h_person->barday = 7;
-							dh.barcount += 7;
-						}
-						else
-						{
-							h_person->bargoing = 2;
-							h_person->barday = rand() % 28;
-						}
-					}
-				}
-				else
-				{
-					h_person->bargoing = 0;
-				}
-
-				// If the person is younger than 18, list them as requiring a school
-				if (h_person->age < 18)
-				{
-					dh.schoolarray[dh.childcount] = h_person->id;
-					dh.childcount++;
-				}
-
-				random = ((float)rand() / (RAND_MAX));
-
-				if ((random < hivprob) && (h_person->age >= 18))
-				{
-					h_person->hiv = 1;
-
-					random = ((float)rand() / (RAND_MAX));
-					if (random < art_coverage)
-					{
-						h_person->art = 1;
-						weight = rr_as * rr_hiv * rr_art;
-
-						unsigned int randomday = rand() % 28;
-
-						while (randomday % 7 == 0 || randomday % 7 == 6)
-						{
-							randomday = rand() % 28;
-						}
-
-						h_person->artday = randomday;
-					}
-					else
-					{
-						h_person->art = 0;
-						weight = rr_as * rr_hiv;
-					}
-				}
-				else
-				{
-					h_person->hiv = 0;
-					h_person->art = 0;
-					weight = rr_as;
-				}
-
-				dh.weights[h_person->id - 1] = weight;
-
-				// Update the arrays of information with this person's household size
-				// and age.
-				dh.ages[h_person->id - 1] = age;
 				dh.sizesarray[h_person->id - 1] = currentsize;
 
 				// Generate the agent and free them from memory on the host.
@@ -772,6 +801,10 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 	}
 }
 
+
+/* This function generates household agents and decides properties about the household, such as whether the household is churchoing . It also
+   allocates individual people to the household. It generates a household membership agent for each person in the household and stores the
+   total number of adults in the household in an array. */
 void initHouseholds(const PopulationInfo& populationInfo, DataHolder& dh) {
 	unsigned int churchfreq;
 	unsigned int churchgoing;
@@ -907,8 +940,6 @@ void initHouseholds(const PopulationInfo& populationInfo, DataHolder& dh) {
 }
 
 void allocateTransport(const DataHolder& dh) {
-	
-
 	float transport_dur20 = *get_TRANSPORT_DUR20();
 	float transport_dur45 = *get_TRANSPORT_DUR45();
 
@@ -986,6 +1017,8 @@ void allocateTransport(const DataHolder& dh) {
 
 }
 
+
+/* Allocates people to workplaces generating a workplacemembership agent for each pairing*/
 void allocateWorkplaces(DataHolder& dh) {
 	unsigned int workplace_size = *get_WORKPLACE_SIZE();
 
@@ -1333,8 +1366,6 @@ __FLAME_GPU_INIT_FUNC__ void initialiseHost()
 
   // deallocating the memory
   free(dh.order);
-  
-
 }
 
 // Function that prints out the number of agents generated after initialisation.
@@ -1459,6 +1490,8 @@ __FLAME_GPU_EXIT_FUNC__ void exitFunction()
 
 // The update functions for each agent type, which are involved in deciding
 // where a person is at a given time.
+
+/* This function updates a person agent - all the if conditions should perhaps be mapped to agent states*/
 __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
                               xmachine_message_location_list *location_messages,
                               RNG_rand48 *rand48)
@@ -1701,6 +1734,8 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
   return 0;
 }
 
+
+/* All the update lambda functions just set the person's lambda value to that of the location they are at - network messaging would make this trivial with a single message output from each location*/
 __FLAME_GPU_FUNC__ int
 updatelambdahh(xmachine_memory_Person *person,
                xmachine_message_household_infection_list *infection_messages)
@@ -1855,6 +1890,7 @@ updatelambdasch(xmachine_memory_Person *person,
   return 0;
 }
 
+/* Computes whether a person has become infected based on their lambda value & 'p' value. */
 __FLAME_GPU_FUNC__ int infect(xmachine_memory_Person *person,
                               RNG_rand48 *rand48)
 {
@@ -1872,7 +1908,12 @@ __FLAME_GPU_FUNC__ int infect(xmachine_memory_Person *person,
 
   return 0;
 }
-
+/* Each locationtype update function computes a 'qsum' from location messages which is then used to compute the lambda value for the location. 
+   Location messages come from each agent, and the q value is also that of the person. Hence each location here is summing the q values of the
+   person agents who are at that location to compute qsum. Networked messaging would again speed this up dramatically.
+   Each locationtype agent then outputs an infection message. 
+   
+   location_message->location is the type of place, e.g. bar, church, household. */
 __FLAME_GPU_FUNC__ int
 hhupdate(xmachine_memory_Household *household,
          xmachine_message_location_list *location_messages,
@@ -2091,6 +2132,7 @@ schupdate(xmachine_memory_School *school,
   return 0;
 }
 
+/* Each of these init functions simply outputs an assignment message. There is a single agent for every relation between a place and person which outputs this each step. */
 __FLAME_GPU_FUNC__ int
 tbinit(xmachine_memory_TBAssignment *tbassignment,
        xmachine_message_tb_assignment_list *tb_assignment_messages)
@@ -2221,6 +2263,7 @@ persontbinit(xmachine_memory_Person *person,
   return 0;
 }
 
+/* These init functions scan the entire list of membership messages to set the person agent's membership values - these don't change through a sim so should bet set at initialisation instead. */
 __FLAME_GPU_FUNC__ int personschinit(
     xmachine_memory_Person *person,
     xmachine_message_school_membership_list *school_membership_messages)
