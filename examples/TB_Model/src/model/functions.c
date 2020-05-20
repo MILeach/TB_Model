@@ -735,6 +735,10 @@ void decideSchool(xmachine_memory_Person *h_person, DataHolder& dh) {
 void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 	float max_age = *get_MAX_AGE();
 	float starting_population = *get_STARTING_POPULATION();
+	unsigned int personCounter = 0;
+
+	// Allocate memory for the agent we are generating.
+	xmachine_memory_Person **h_person_AoS = h_allocate_agent_Person_array((int)(starting_population));
 
 	// This loop runs once for each age/gender category, so once for every row in
 	// the histogram.
@@ -770,7 +774,7 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 			for (unsigned int k = 0; k < rounded; k++)
 			{
 				// Allocate memory for the agent we are generating.
-				xmachine_memory_Person *h_person = h_allocate_agent_Person();
+				xmachine_memory_Person *h_person = h_person_AoS[personCounter];
 
 				// Assign the variables for the person agent based on information from
 				// the histogram.
@@ -792,13 +796,14 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 				h_person->lastinfectedid = -1;
 				h_person->lastinfectedtime = -1;
 
-				h_add_agent_Person_default(h_person);
-				printf("Person added %i\n", h_person->id);
-
-				h_free_agent_Person(&h_person);
+				
+				personCounter++;
+				
 			}
 		}
 	}
+	h_add_agents_Person_default(h_person_AoS, personCounter);
+	h_free_agent_Person_array(&h_person_AoS, personCounter);
 }
 
 
@@ -820,6 +825,17 @@ void initHouseholds(const PopulationInfo& populationInfo, DataHolder& dh) {
 	float church_prob5 = *get_CHURCH_PROB5();
 	float church_prob6 = *get_CHURCH_PROB6();
 
+	// Compute total number of households required
+	int numHouseholds = 0;
+	for (unsigned int i = 0; i < populationInfo.numHouseholdSizes; i++)
+		for (unsigned int j = 0; j < populationInfo.numPeopleInHouseholdSize[i] / populationInfo.householdSizes[i]; j++)
+			numHouseholds++;
+
+	xmachine_memory_Household** h_household_AoS = h_allocate_agent_Household_array(numHouseholds);
+	xmachine_memory_HouseholdMembership** h_HouseholdMemmbership_AoS = h_allocate_agent_HouseholdMembership_array(populationInfo.totalPopulationSize);
+	unsigned int hhmembershipCounter = 0;
+	unsigned int householdCounter = 0;
+
 	// This loop runs once for each possible size of household.
 	for (unsigned int i = 0; i < populationInfo.numHouseholdSizes; i++)
 	{
@@ -829,7 +845,7 @@ void initHouseholds(const PopulationInfo& populationInfo, DataHolder& dh) {
 		for (unsigned int j = 0; j < populationInfo.numPeopleInHouseholdSize[i] / populationInfo.householdSizes[i] ; j++)
 		{
 			// Allocate memory for the household agent.
-			xmachine_memory_Household *h_household = h_allocate_agent_Household();
+			xmachine_memory_Household *h_household = h_household_AoS[householdCounter];
 			float churchprob = 1 / (1 + exp(-church_beta0 - church_beta1 * i));
 			dh.adultcount = 0;
 
@@ -897,8 +913,7 @@ void initHouseholds(const PopulationInfo& populationInfo, DataHolder& dh) {
 			// track of how many of them are adults.
 			for (unsigned int k = 0; k < i; k++)
 			{
-				xmachine_memory_HouseholdMembership *h_hhmembership =
-					h_allocate_agent_HouseholdMembership();
+				xmachine_memory_HouseholdMembership *h_hhmembership = h_HouseholdMemmbership_AoS[hhmembershipCounter];
 				h_hhmembership->household_id = h_household->id;
 				h_hhmembership->person_id = dh.order[dh.count];
 				h_hhmembership->churchgoing = churchgoing;
@@ -917,9 +932,7 @@ void initHouseholds(const PopulationInfo& populationInfo, DataHolder& dh) {
 
 				dh.count++;
 
-				h_add_agent_HouseholdMembership_hhmembershipdefault(h_hhmembership);
-
-				h_free_agent_HouseholdMembership(&h_hhmembership);
+				hhmembershipCounter++;
 			}
 
 			// Set the variable for how many adults belong in the household, generate
@@ -931,19 +944,25 @@ void initHouseholds(const PopulationInfo& populationInfo, DataHolder& dh) {
 				dh.activehouseholds[h_household->id] = 1;
 			}
 
-			h_add_agent_Household_hhdefault(h_household);
-
-			h_free_agent_Household(&h_household);
+			householdCounter++;
 		}
 	}
+
+	h_add_agents_Household_hhdefault(h_household_AoS, householdCounter);
+	h_free_agent_Household_array(&h_household_AoS, householdCounter);
+	h_add_agents_HouseholdMembership_hhmembershipdefault(h_hhmembership_AoS, hhmembershipCounter);
+	h_free_agent_HouseholdMembership_array(&h_hhmembership_AoS, hhmembershipCounter);
 	free(dh.activepeople);
 }
 
-void allocateTransport(const DataHolder& dh) {
+void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInfo) {
 	float transport_dur20 = *get_TRANSPORT_DUR20();
 	float transport_dur45 = *get_TRANSPORT_DUR45();
 
 	unsigned int transport_size = *get_TRANSPORT_SIZE();
+	
+	xmachine_memory_TransportMembership** h_trmembership_AoS = h_allocate_agent_TransportMembership_array(populationInfo.totalPopulationSize);
+	unsigned int transportMembershipCounter = 0;
 
 	// Allocate people to transport
 	for (unsigned int i = 1; i <= 5; i++)
@@ -951,6 +970,7 @@ void allocateTransport(const DataHolder& dh) {
 
 		unsigned int currentday = 0;
 		unsigned int currentpeople[h_agent_AoS_MAX];
+		
 
 		for (unsigned int j = 0; j < h_agent_AoS_MAX; j++)
 		{
@@ -995,26 +1015,24 @@ void allocateTransport(const DataHolder& dh) {
 					h_transport->active = 1;
 				}
 
-				xmachine_memory_TransportMembership *h_trmembership =
-					h_allocate_agent_TransportMembership();
+				xmachine_memory_TransportMembership *h_trmembership = h_trmembership_AoS[transportMembershipCounter];
 				h_trmembership->person_id = currentpeople[countdone];
 				h_trmembership->transport_id = h_transport->id;
 				h_trmembership->duration = duration;
 
-				h_add_agent_TransportMembership_trmembershipdefault(h_trmembership);
-
-				h_free_agent_TransportMembership(&h_trmembership);
+				
 
 				capacity++;
 				countdone++;
+				transportMembershipCounter++;
 			}
 
 			h_add_agent_Transport_trdefault(h_transport);
-
 			h_free_agent_Transport(&h_transport);
 		}
 	}
-
+	h_add_agents_TransportMembership_trmembershipdefault(h_trmembership_AoS, transportMembershipCounter);
+	h_free_agent_TransportMembership_array(&h_trmembership_AoS, populationInfo.totalPopulationSize);
 }
 
 
@@ -1356,7 +1374,7 @@ __FLAME_GPU_INIT_FUNC__ void initialiseHost()
   allocateTB(dh);
   initHouseholds(populationInfo, dh);
   allocateChurches(dh);
-  allocateTransport(dh);
+  allocateTransport(dh, populationInfo);
   allocateClinics();
   allocateWorkplaces(dh);
   allocateBars(dh);
