@@ -952,10 +952,10 @@ void initHouseholds(const PopulationInfo& populationInfo, DataHolder& dh) {
 	h_free_agent_Household_array(&h_household_AoS, householdCounter);
 	h_add_agents_HouseholdMembership_hhmembershipdefault(h_hhmembership_AoS, hhmembershipCounter);
 	h_free_agent_HouseholdMembership_array(&h_hhmembership_AoS, hhmembershipCounter);
-	free(dh.activepeople);
 }
 
 void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInfo) {
+	printf("In allocate transport");
 	float transport_dur20 = *get_TRANSPORT_DUR20();
 	float transport_dur45 = *get_TRANSPORT_DUR45();
 
@@ -965,13 +965,14 @@ void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInf
 	unsigned int transportMembershipCounter = 0;
 
 	// Allocate people to transport
+	// For each day people might use transport (1-5)
 	for (unsigned int i = 1; i <= 5; i++)
 	{
-
+		printf("i=%d", i);
 		unsigned int currentday = 0;
 		unsigned int currentpeople[h_agent_AoS_MAX];
 		
-
+		// Count how many people are travelling on this day and store them (?) in currentpeople
 		for (unsigned int j = 0; j < h_agent_AoS_MAX; j++)
 		{
 			if (dh.days[j] == i)
@@ -981,11 +982,15 @@ void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInf
 			}
 		}
 
-		unsigned int countdone = 0;
-		unsigned int capacity;
+		printf("People counted");
 
+		unsigned int countdone = 0;
+		unsigned int capacity = 0;
+
+		// Until we have allocated everyone
 		while (countdone < currentday)
 		{
+			// Create a transport agent
 			xmachine_memory_Transport *h_transport = h_allocate_agent_Transport();
 			capacity = 0;
 
@@ -993,6 +998,7 @@ void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInf
 
 			float random = ((float)rand() / (RAND_MAX));
 
+			// Select a journey length
 			float duration;
 			if (random < transport_dur20)
 			{
@@ -1007,20 +1013,21 @@ void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInf
 				duration = 60;
 			}
 
+			// While this transport agent (vehicle) has capacity and we still have people who need allocating
 			while (capacity < transport_size && countdone < currentday)
 			{
-
+				// If the person we are adding is active, set the transport to activey
 				if (dh.activepeople[currentpeople[countdone]] == 1)
 				{
 					h_transport->active = 1;
 				}
 
+				// Create a membership association between  the person and transport
 				xmachine_memory_TransportMembership *h_trmembership = h_trmembership_AoS[transportMembershipCounter];
 				h_trmembership->person_id = currentpeople[countdone];
 				h_trmembership->transport_id = h_transport->id;
 				h_trmembership->duration = duration;
 
-				
 
 				capacity++;
 				countdone++;
@@ -1031,13 +1038,17 @@ void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInf
 			h_free_agent_Transport(&h_transport);
 		}
 	}
+	printf("Adding trmembership agents");
 	h_add_agents_TransportMembership_trmembershipdefault(h_trmembership_AoS, transportMembershipCounter);
 	h_free_agent_TransportMembership_array(&h_trmembership_AoS, populationInfo.totalPopulationSize);
+	printf("Finished allocateTransport");
 }
 
 
 /* Allocates people to workplaces generating a workplacemembership agent for each pairing*/
 void allocateWorkplaces(DataHolder& dh) {
+
+	printf("In allocate workplaces");
 	unsigned int workplace_size = *get_WORKPLACE_SIZE();
 
 	// Allocate people to workplaces
@@ -1073,7 +1084,7 @@ void allocateWorkplaces(DataHolder& dh) {
 }
 
 void allocateChurches(DataHolder& dh) {
-
+	printf("In allocate churches");
 	float church_p1 = *get_CHURCH_P1();
 	float church_p2 = *get_CHURCH_P2();
 
@@ -1182,18 +1193,22 @@ void allocateChurches(DataHolder& dh) {
 }
 
 void allocateBars(DataHolder& dh) {
+	printf("In allocate bars");
 	unsigned int bar_size = *get_BAR_SIZE();
 
 	// Allocate people to bars? Doesn't quite follow format of others TODO: check if implementation correct - see school allocation 
 	for (unsigned int i = 0; i < dh.barcount / bar_size; i++)
 	{
-		xmachine_memory_Bar *h_bar = h_allocate_agent_Bar();
+		printf("Bar %d", i);
+		printf("Bar %d", i);
+		printf("Bar %d", i);
+		//xmachine_memory_Bar *h_bar = h_allocate_agent_Bar();
 
-		h_bar->id = getNextBarID();
+		//h_bar->id = getNextBarID();
 
-		h_add_agent_Bar_bdefault(h_bar);
+		//h_add_agent_Bar_bdefault(h_bar);
 
-		h_free_agent_Bar(&h_bar);
+		//h_free_agent_Bar(&h_bar);
 	}
 
 }
@@ -1378,12 +1393,13 @@ __FLAME_GPU_INIT_FUNC__ void initialiseHost()
   allocateClinics();
   allocateWorkplaces(dh);
   allocateBars(dh);
-  allocateSchools(dh);
+  //allocateSchools(dh);
 
   setConstants();
 
   // deallocating the memory
   free(dh.order);
+  free(dh.activepeople);
 }
 
 // Function that prints out the number of agents generated after initialisation.
@@ -1489,8 +1505,6 @@ __FLAME_GPU_EXIT_FUNC__ void exitFunction()
   h_free_agent_Workplace_array(&h_workplace_AoS, h_workplace_AoS_MAX);
   h_free_agent_Bar_array(&h_bar_AoS, h_bar_AoS_MAX);
   h_free_agent_TBAssignment_array(&h_tbassignment_AoS, h_tbassignment_AoS_MAX);
-  h_free_agent_HouseholdMembership_array(&h_hhmembership_AoS,
-                                         h_hhmembership_AoS_MAX);
   h_free_agent_ChurchMembership_array(&h_chumembership_AoS,
                                       h_chumembership_AoS_MAX);
   h_free_agent_TransportMembership_array(&h_trmembership_AoS,
