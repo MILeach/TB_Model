@@ -13,6 +13,8 @@
 #define GetCurrentDir _getcwd
 
 #define INSTRUMENT_INIT_FUNCTIONS 1
+#define INSTRUMENT_AGENT_FUNCTIONS 1
+#define INSTRUMENT_ITERATIONS 1
 
 
 // Allocate blocks of memory for each type of agent, and defining a constant
@@ -352,14 +354,12 @@ PopulationInfo readInputFile() {
 		}
 
 		populationInfo.ageGenderCategories[i].numPeopleInHouseholdSize = (unsigned int*)malloc(sizeof(unsigned int*)*populationInfo.numHouseholdSizes);
-		printf("Category: %i \n", i);
 		for (int j = 0; j < populationInfo.numHouseholdSizes; j++) {
 			// Read in the household size we are working with and the relevant value
 			// from the histogram.
 			populationInfo.householdSizes[j] = strtol(fgets(line, sizeof(line), file), NULL, 0);
 			populationInfo.ageGenderCategories[i].numPeopleInHouseholdSize[j] = strtof(fgets(line, sizeof(line), file), NULL);
 			populationInfo.numPeopleInHouseholdSize[i] += populationInfo.ageGenderCategories[i].numPeopleInHouseholdSize[j];
-			printf("Household size: %i    Population: %i    \n", j, populationInfo.ageGenderCategories[i].numPeopleInHouseholdSize[j]);
 		}
 
 	}
@@ -747,23 +747,15 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 		int gender = populationInfo.ageGenderCategories[i].gender;
 		int maxage = populationInfo.ageGenderCategories[i].maxage;
 		int minage = populationInfo.ageGenderCategories[i].minage;
-		printf("Category %i \n", i);
 
 		// This loop runs once for each size of household, so once for every column
 		// in the histogram. At this point we are working with individual values
 		// from the histogram.
-
-		for (unsigned int j = 0; j < populationInfo.numHouseholdSizes; j++) {
-			printf("%i", populationInfo.ageGenderCategories[i].numPeopleInHouseholdSize[j]);
-		}
 		for (unsigned int j = 0; j < populationInfo.numHouseholdSizes; j++)
 		{
-			printf("Household size %i ", j);
 			int currentsize = populationInfo.householdSizes[j];
-			printf("i: %i, j: %i, numPeople: %i", i, j, populationInfo.ageGenderCategories[i].numPeopleInHouseholdSize[j]);
 			float amount = populationInfo.ageGenderCategories[i].numPeopleInHouseholdSize[j];
 			
-
 			// Adjust this value proportionally so that our final population of people
 			// will match the starting population specified in the input.
 			float frac = amount / populationInfo.totalPopulationSize;
@@ -955,7 +947,6 @@ void initHouseholds(const PopulationInfo& populationInfo, DataHolder& dh) {
 }
 
 void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInfo) {
-	printf("In allocate transport");
 	float transport_dur20 = *get_TRANSPORT_DUR20();
 	float transport_dur45 = *get_TRANSPORT_DUR45();
 
@@ -968,7 +959,6 @@ void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInf
 	// For each day people might use transport (1-5)
 	for (unsigned int i = 1; i <= 5; i++)
 	{
-		printf("i=%d", i);
 		unsigned int currentday = 0;
 		unsigned int currentpeople[h_agent_AoS_MAX];
 		
@@ -981,8 +971,6 @@ void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInf
 				currentday++;
 			}
 		}
-
-		printf("People counted");
 
 		unsigned int countdone = 0;
 		unsigned int capacity = 0;
@@ -1038,17 +1026,14 @@ void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInf
 			h_free_agent_Transport(&h_transport);
 		}
 	}
-	printf("Adding trmembership agents");
 	h_add_agents_TransportMembership_trmembershipdefault(h_trmembership_AoS, transportMembershipCounter);
 	h_free_agent_TransportMembership_array(&h_trmembership_AoS, populationInfo.totalPopulationSize);
-	printf("Finished allocateTransport");
 }
 
 
 /* Allocates people to workplaces generating a workplacemembership agent for each pairing*/
 void allocateWorkplaces(DataHolder& dh) {
 
-	printf("In allocate workplaces");
 	unsigned int workplace_size = *get_WORKPLACE_SIZE();
 
 	// Allocate people to workplaces
@@ -1084,7 +1069,6 @@ void allocateWorkplaces(DataHolder& dh) {
 }
 
 void allocateChurches(DataHolder& dh) {
-	printf("In allocate churches");
 	float church_p1 = *get_CHURCH_P1();
 	float church_p2 = *get_CHURCH_P2();
 
@@ -1099,6 +1083,9 @@ void allocateChurches(DataHolder& dh) {
 	unsigned int hhtotal = get_agent_Household_hhdefault_count();
 	//unsigned int hhorder[xmachine_memory_Household_MAX]; // hhtotal
 	unsigned int* hhorder = (unsigned int*)malloc(hhtotal * sizeof(unsigned int));
+
+	// Allocate memory for church membership agents
+	xmachine_memory_ChurchMembership **h_chumemberships =	h_allocate_agent_ChurchMembership_array(hhtotal);
 
 	for (unsigned int i = 0; i < hhtotal; i++)
 	{
@@ -1164,8 +1151,7 @@ void allocateChurches(DataHolder& dh) {
 
 		while (capacity < h_church->size && hhposition < hhtotal)
 		{
-			xmachine_memory_ChurchMembership *h_chumembership =
-				h_allocate_agent_ChurchMembership();
+			xmachine_memory_ChurchMembership *h_chumembership = h_chumemberships[hhposition];
 			h_chumembership->church_id = h_church->id;
 			h_chumembership->household_id = hhorder[hhposition];
 			h_chumembership->churchdur = duration;
@@ -1178,37 +1164,30 @@ void allocateChurches(DataHolder& dh) {
 			dh.count++;
 			capacity += dh.adult[hhposition];
 			hhposition++;
-
-			h_add_agent_ChurchMembership_chumembershipdefault(h_chumembership);
-
-			h_free_agent_ChurchMembership(&h_chumembership);
 		}
 
 		// Generate the church agent and free it from memory on the host.
 		h_add_agent_Church_chudefault(h_church);
-
 		h_free_agent_Church(&h_church);
 	}
+	h_add_agents_ChurchMembership_chumembershipdefault(h_chumemberships, hhtotal);
+	h_free_agent_ChurchMembership_array(&h_chumemberships, hhtotal);
 	free(hhorder);
 }
 
 void allocateBars(DataHolder& dh) {
-	printf("In allocate bars");
 	unsigned int bar_size = *get_BAR_SIZE();
 
 	// Allocate people to bars? Doesn't quite follow format of others TODO: check if implementation correct - see school allocation 
 	for (unsigned int i = 0; i < dh.barcount / bar_size; i++)
 	{
-		printf("Bar %d", i);
-		printf("Bar %d", i);
-		printf("Bar %d", i);
-		//xmachine_memory_Bar *h_bar = h_allocate_agent_Bar();
+		xmachine_memory_Bar *h_bar = h_allocate_agent_Bar();
 
-		//h_bar->id = getNextBarID();
+		h_bar->id = getNextBarID();
 
-		//h_add_agent_Bar_bdefault(h_bar);
+		h_add_agent_Bar_bdefault(h_bar);
 
-		//h_free_agent_Bar(&h_bar);
+		h_free_agent_Bar(&h_bar);
 	}
 
 }
@@ -1219,9 +1198,14 @@ void allocateSchools(DataHolder& dh) {
 	shuffle(dh.schoolarray, dh.schoolarray, dh.childcount);
 	unsigned int childpos = 0;
 
+	unsigned int numSchools = dh.childcount / school_size;
+	xmachine_memory_School **h_schools = h_allocate_agent_School_array(numSchools);
+
+	xmachine_memory_SchoolMembership **h_schmemberships = h_allocate_agent_SchoolMembership_array(dh.childcount);
+
 	for (unsigned int i = 0; i < dh.childcount / school_size; i++)
 	{
-		xmachine_memory_School *h_school = h_allocate_agent_School();
+		xmachine_memory_School *h_school = h_schools[i];
 
 		h_school->id = getNextSchoolID();
 
@@ -1229,23 +1213,21 @@ void allocateSchools(DataHolder& dh) {
 		{
 			if (childpos <= dh.childcount)
 			{
-				xmachine_memory_SchoolMembership *h_schmembership =
-					h_allocate_agent_SchoolMembership();
+				xmachine_memory_SchoolMembership *h_schmembership = h_schmemberships[j];
 
 				h_schmembership->school_id = h_school->id;
 				h_schmembership->person_id = dh.schoolarray[childpos];
 				childpos++;
 
-				h_add_agent_SchoolMembership_schmembershipdefault(h_schmembership);
-
-				h_free_agent_SchoolMembership(&h_schmembership);
+				
 			}
 		}
-
-		h_add_agent_School_schdefault(h_school);
-
-		h_free_agent_School(&h_school);
 	}
+	h_add_agents_School_schdefault(h_schools, numSchools);
+	h_free_agent_School_array(&h_schools, numSchools);
+
+	h_add_agents_SchoolMembership_schmembershipdefault(h_schmemberships, dh.childcount);
+	h_free_agent_SchoolMembership_array(&h_schmemberships, dh.childcount);
 }
 
 void allocateTB(DataHolder& dh) {
@@ -1393,7 +1375,7 @@ __FLAME_GPU_INIT_FUNC__ void initialiseHost()
   allocateClinics();
   allocateWorkplaces(dh);
   allocateBars(dh);
-  //allocateSchools(dh);
+  allocateSchools(dh);
 
   setConstants();
 
@@ -2164,7 +2146,8 @@ schupdate(xmachine_memory_School *school,
   return 0;
 }
 
-/* Each of these init functions simply outputs an assignment message. There is a single agent for every relation between a place and person which outputs this each step. */
+/* Each of these init functions simply outputs an assignment message. There is a single agent for every relation between a place and person which outputs this each step.
+   These return 1 killing the agent at the end of the step, so the messages aren't actually repeated. */
 __FLAME_GPU_FUNC__ int
 tbinit(xmachine_memory_TBAssignment *tbassignment,
        xmachine_message_tb_assignment_list *tb_assignment_messages)
