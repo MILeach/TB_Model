@@ -845,42 +845,6 @@
           <gpu:reallocate>false</gpu:reallocate>
           <gpu:RNG>true</gpu:RNG>
         </gpu:function>
-        <gpu:function>
-          <name>persontrinit</name>
-          <currentState>default</currentState>
-          <nextState>default</nextState>
-          <inputs>
-            <gpu:input>
-              <messageName>transport_membership</messageName>
-            </gpu:input>
-          </inputs>
-          <gpu:reallocate>false</gpu:reallocate>
-          <gpu:RNG>false</gpu:RNG>
-        </gpu:function>
-        <gpu:function>
-          <name>personwpinit</name>
-          <currentState>default</currentState>
-          <nextState>default</nextState>
-          <inputs>
-            <gpu:input>
-              <messageName>workplace_membership</messageName>
-            </gpu:input>
-          </inputs>
-          <gpu:reallocate>false</gpu:reallocate>
-          <gpu:RNG>false</gpu:RNG>
-        </gpu:function>
-        <gpu:function>
-          <name>personschinit</name>
-          <currentState>default</currentState>
-          <nextState>default</nextState>
-          <inputs>
-            <gpu:input>
-              <messageName>school_membership</messageName>
-            </gpu:input>
-          </inputs>
-          <gpu:reallocate>false</gpu:reallocate>
-          <gpu:RNG>false</gpu:RNG>
-        </gpu:function>
       </functions>
 
       <!-- States that the agent can be in during a given iteration -->
@@ -1228,51 +1192,7 @@
       <gpu:bufferSize>2048</gpu:bufferSize>
     </gpu:xagent>
 
-    <gpu:xagent>
-      <name>TransportMembership</name>
-
-      <memory>
-        <gpu:variable>
-          <type>int</type>
-          <name>person_id</name>
-        </gpu:variable>
-        <gpu:variable>
-          <type>unsigned int</type>
-          <name>transport_id</name>
-        </gpu:variable>
-        <gpu:variable>
-          <type>unsigned int</type>
-          <name>duration</name>
-        </gpu:variable>
-      </memory>
-
-      <functions>
-        <gpu:function>
-          <name>trinit</name>
-          <currentState>trmembershipdefault</currentState>
-          <nextState>trmembershipdefault</nextState>
-          <outputs>
-            <gpu:output>
-              <messageName>transport_membership</messageName>
-              <gpu:type>single_message</gpu:type>
-            </gpu:output>
-          </outputs>
-          <gpu:reallocate>true</gpu:reallocate>
-          <gpu:RNG>false</gpu:RNG>
-        </gpu:function>
-      </functions>
-
-      <states>
-        <gpu:state>
-          <name>trmembershipdefault</name>
-        </gpu:state>
-        <initialState>trmembershipdefault</initialState>
-      </states>
-
-      <gpu:type>continuous</gpu:type>
-
-      <gpu:bufferSize>32768</gpu:bufferSize>
-    </gpu:xagent>
+   
 
     <gpu:xagent>
       <name>Clinic</name>
@@ -1368,47 +1288,6 @@
       <gpu:bufferSize>8192</gpu:bufferSize>
     </gpu:xagent>
 
-    <gpu:xagent>
-      <name>WorkplaceMembership</name>
-
-      <memory>
-        <gpu:variable>
-          <type>unsigned int</type>
-          <name>person_id</name>
-        </gpu:variable>
-        <gpu:variable>
-          <type>unsigned int</type>
-          <name>workplace_id</name>
-        </gpu:variable>
-      </memory>
-
-      <functions>
-        <gpu:function>
-          <name>wpinit</name>
-          <currentState>wpmembershipdefault</currentState>
-          <nextState>wpmembershipdefault</nextState>
-          <outputs>
-            <gpu:output>
-              <messageName>workplace_membership</messageName>
-              <gpu:type>single_message</gpu:type>
-            </gpu:output>
-          </outputs>
-          <gpu:reallocate>true</gpu:reallocate>
-          <gpu:RNG>false</gpu:RNG>
-        </gpu:function>
-      </functions>
-
-      <states>
-        <gpu:state>
-          <name>wpmembershipdefault</name>
-        </gpu:state>
-        <initialState>wpmembershipdefault</initialState>
-      </states>
-
-      <gpu:type>continuous</gpu:type>
-
-      <gpu:bufferSize>32768</gpu:bufferSize>
-    </gpu:xagent>
 
     <gpu:xagent>
       <name>Bar</name>
@@ -1504,48 +1383,6 @@
       <gpu:bufferSize>2048</gpu:bufferSize>
     </gpu:xagent>
 
-    <gpu:xagent>
-      <name>SchoolMembership</name>
-
-      <memory>
-        <gpu:variable>
-          <type>unsigned int</type>
-          <name>person_id</name>
-        </gpu:variable>
-        <gpu:variable>
-          <type>unsigned int</type>
-          <name>school_id</name>
-        </gpu:variable>
-      </memory>
-
-      <functions>
-        <gpu:function>
-          <name>schinit</name>
-          <currentState>schmembershipdefault</currentState>
-          <nextState>schmembershipdefault</nextState>
-          <outputs>
-            <gpu:output>
-              <messageName>school_membership</messageName>
-              <gpu:type>single_message</gpu:type>
-            </gpu:output>
-          </outputs>
-          <gpu:reallocate>true</gpu:reallocate>
-          <gpu:RNG>false</gpu:RNG>
-        </gpu:function>
-      </functions>
-
-      <states>
-        <gpu:state>
-          <name>schmembershipdefault</name>
-        </gpu:state>
-        <initialState>schmembershipdefault</initialState>
-      </states>
-
-      <gpu:type>continuous</gpu:type>
-
-      <gpu:bufferSize>16384</gpu:bufferSize>
-    </gpu:xagent>
-
   </xagents>
 
   <!-- Messages sent by agents which can be read by other agents -->
@@ -1618,60 +1455,7 @@
       <gpu:bufferSize>8192</gpu:bufferSize>
     </gpu:message>
 
-    <gpu:message>
-      <name>transport_membership</name>
-      <description>A message declaring that a person uses a transport</description>
-      <variables>
-        <gpu:variable>
-          <type>unsigned int</type>
-          <name>person_id</name>
-        </gpu:variable>
-        <gpu:variable>
-          <type>unsigned int</type>
-          <name>transport_id</name>
-        </gpu:variable>
-        <gpu:variable>
-          <type>unsigned int</type>
-          <name>duration</name>
-        </gpu:variable>
-      </variables>
-      <gpu:partitioningNone/>
-      <gpu:bufferSize>32768</gpu:bufferSize>
-    </gpu:message>
-
-    <gpu:message>
-      <name>workplace_membership</name>
-      <description>A message declaring that a person is employed at a workplace</description>
-      <variables>
-        <gpu:variable>
-          <type>unsigned int</type>
-          <name>person_id</name>
-        </gpu:variable>
-        <gpu:variable>
-          <type>unsigned int</type>
-          <name>workplace_id</name>
-        </gpu:variable>
-      </variables>
-      <gpu:partitioningNone/>
-      <gpu:bufferSize>32768</gpu:bufferSize>
-    </gpu:message>
-
-    <gpu:message>
-      <name>school_membership</name>
-      <description>A message declaring that a person studies at a school</description>
-      <variables>
-        <gpu:variable>
-          <type>unsigned int</type>
-          <name>person_id</name>
-        </gpu:variable>
-        <gpu:variable>
-          <type>unsigned int</type>
-          <name>school_id</name>
-        </gpu:variable>
-      </variables>
-      <gpu:partitioningNone/>
-      <gpu:bufferSize>16384</gpu:bufferSize>
-    </gpu:message>
+   
 
     <gpu:message>
       <name>location</name>
@@ -1791,18 +1575,6 @@
       <gpu:layerFunction>
         <name>tbinit</name>
       </gpu:layerFunction>
-   
-      <gpu:layerFunction>
-        <name>schinit</name>
-      </gpu:layerFunction>
-    
-      <gpu:layerFunction>
-        <name>wpinit</name>
-      </gpu:layerFunction>
-   
-      <gpu:layerFunction>
-        <name>trinit</name>
-      </gpu:layerFunction>
     
       <gpu:layerFunction>
         <name>chuinit</name>
@@ -1812,24 +1584,9 @@
         <name>hhinit</name>
       </gpu:layerFunction>
    
-      <gpu:layerFunction>
-        <name>schinit</name>
-      </gpu:layerFunction>
     </layer>
 
     <layer>
-      <gpu:layerFunction>
-        <name>personschinit</name>
-      </gpu:layerFunction>
-   
-      <gpu:layerFunction>
-        <name>personwpinit</name>
-      </gpu:layerFunction>
-  
-      <gpu:layerFunction>
-        <name>persontrinit</name>
-      </gpu:layerFunction>
-    
       <gpu:layerFunction>
         <name>persontbinit</name>
       </gpu:layerFunction>

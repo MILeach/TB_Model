@@ -29,6 +29,7 @@
 // Allocate blocks of memory for each type of agent, and defining a constant
 // for the maximum number of each that should be generated.
 xmachine_memory_Person **h_agent_AoS;
+xmachine_memory_Person **h_person_AoS;
 xmachine_memory_Household **h_household_AoS;
 xmachine_memory_Church **h_church_AoS;
 xmachine_memory_Transport **h_transport_AoS;
@@ -40,9 +41,6 @@ xmachine_memory_School **h_school_AoS;
 xmachine_memory_TBAssignment **h_tbassignment_AoS;
 xmachine_memory_HouseholdMembership **h_hhmembership_AoS;
 xmachine_memory_ChurchMembership **h_chumembership_AoS;
-xmachine_memory_TransportMembership **h_trmembership_AoS;
-xmachine_memory_WorkplaceMembership **h_wpmembership_AoS;
-xmachine_memory_SchoolMembership **h_schmembership_AoS;
 
 const unsigned int h_agent_AoS_MAX = 32768;
 const unsigned int h_household_AoS_MAX = 8192;
@@ -70,6 +68,8 @@ unsigned int h_nextClinicID;
 unsigned int h_nextWorkplaceID;
 unsigned int h_nextBarID;
 unsigned int h_nextSchoolID;
+
+unsigned int personCounter = 0;
 
 __host__ unsigned int getNextID()
 {
@@ -403,8 +403,6 @@ void initAgentTypes() {
 		h_allocate_agent_HouseholdMembership_array(h_hhmembership_AoS_MAX);
 	h_chumembership_AoS =
 		h_allocate_agent_ChurchMembership_array(h_chumembership_AoS_MAX);
-	h_trmembership_AoS =
-		h_allocate_agent_TransportMembership_array(h_trmembership_AoS_MAX);
 }
 
 /* Each of the 'decide' functions have no dependency on any other agent. They each use a randomly generated number & set of probabilities to decide the properties of the person.
@@ -748,10 +746,9 @@ void decideSchool(xmachine_memory_Person *h_person, DataHolder& dh) {
 void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 	float max_age = *get_MAX_AGE();
 	float starting_population = *get_STARTING_POPULATION();
-	unsigned int personCounter = 0;
 
 	// Allocate memory for the agent we are generating.
-	xmachine_memory_Person **h_person_AoS = h_allocate_agent_Person_array((int)(starting_population));
+	h_person_AoS = h_allocate_agent_Person_array((int)(starting_population));
 
 	// This loop runs once for each age/gender category, so once for every row in
 	// the histogram.
@@ -807,8 +804,6 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 			}
 		}
 	}
-	h_add_agents_Person_default(h_person_AoS, personCounter);
-	h_free_agent_Person_array(&h_person_AoS, personCounter);
 }
 
 
@@ -964,8 +959,7 @@ void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInf
 	float transport_dur45 = *get_TRANSPORT_DUR45();
 
 	unsigned int transport_size = *get_TRANSPORT_SIZE();
-	
-	xmachine_memory_TransportMembership** h_trmembership_AoS = h_allocate_agent_TransportMembership_array(populationInfo.totalPopulationSize);
+
 	unsigned int transportMembershipCounter = 0;
 
 	// Allocate people to transport
@@ -1024,11 +1018,9 @@ void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInf
 				}
 
 				// Create a membership association between  the person and transport
-				xmachine_memory_TransportMembership *h_trmembership = h_trmembership_AoS[transportMembershipCounter];
-				h_trmembership->person_id = currentpeople[countdone];
-				h_trmembership->transport_id = h_transport->id;
-				h_trmembership->duration = duration;
-
+				unsigned int person_id = currentpeople[countdone];
+				h_person_AoS[person_id-1]->transport = h_transport->id;
+				h_person_AoS[person_id-1]->transportdur = duration;
 
 				capacity++;
 				countdone++;
@@ -1039,8 +1031,6 @@ void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInf
 			h_free_agent_Transport(&h_transport);
 		}
 	}
-	h_add_agents_TransportMembership_trmembershipdefault(h_trmembership_AoS, transportMembershipCounter);
-	h_free_agent_TransportMembership_array(&h_trmembership_AoS, populationInfo.totalPopulationSize);
 }
 
 
@@ -1065,15 +1055,8 @@ void allocateWorkplaces(DataHolder& dh) {
 		{
 			if (employedpos < dh.employedcount)
 			{
-				xmachine_memory_WorkplaceMembership *h_wpmembership =
-					h_allocate_agent_WorkplaceMembership();
-
-				h_wpmembership->person_id = dh.workarray[employedpos];
-				h_wpmembership->workplace_id = h_workplace->id;
-
-				h_add_agent_WorkplaceMembership_wpmembershipdefault(h_wpmembership);
-
-				h_free_agent_WorkplaceMembership(&h_wpmembership);
+				unsigned int person_id = dh.workarray[employedpos];
+				h_person_AoS[person_id - 1]->workplace = h_workplace->id;
 
 				employedpos++;
 			}
@@ -1191,7 +1174,7 @@ void allocateChurches(DataHolder& dh) {
 void allocateBars(DataHolder& dh) {
 	unsigned int bar_size = *get_BAR_SIZE();
 
-	// Allocate people to bars? Doesn't quite follow format of others TODO: check if implementation correct - see school allocation 
+	// Allocate people to bars? Not required, people go to random bars
 	for (unsigned int i = 0; i < dh.barcount / bar_size; i++)
 	{
 		xmachine_memory_Bar *h_bar = h_allocate_agent_Bar();
@@ -1214,8 +1197,6 @@ void allocateSchools(DataHolder& dh) {
 	unsigned int numSchools = dh.childcount / school_size;
 	xmachine_memory_School **h_schools = h_allocate_agent_School_array(numSchools);
 
-	xmachine_memory_SchoolMembership **h_schmemberships = h_allocate_agent_SchoolMembership_array(dh.childcount);
-
 	for (unsigned int i = 0; i < dh.childcount / school_size; i++)
 	{
 		xmachine_memory_School *h_school = h_schools[i];
@@ -1226,21 +1207,15 @@ void allocateSchools(DataHolder& dh) {
 		{
 			if (childpos <= dh.childcount)
 			{
-				xmachine_memory_SchoolMembership *h_schmembership = h_schmemberships[j];
-
-				h_schmembership->school_id = h_school->id;
-				h_schmembership->person_id = dh.schoolarray[childpos];
-				childpos++;
-
-				
+				unsigned int person_id = dh.schoolarray[childpos];
+				// Think person IDs start from 1 - check this
+				h_person_AoS[person_id-1]->school = h_school->id;
+				childpos++;		
 			}
 		}
 	}
 	h_add_agents_School_schdefault(h_schools, numSchools);
 	h_free_agent_School_array(&h_schools, numSchools);
-
-	h_add_agents_SchoolMembership_schmembershipdefault(h_schmemberships, dh.childcount);
-	h_free_agent_SchoolMembership_array(&h_schmemberships, dh.childcount);
 }
 
 void allocateTB(DataHolder& dh) {
@@ -1387,7 +1362,7 @@ __FLAME_GPU_INIT_FUNC__ void initialiseHost()
   // Set a counter for our current position in the array of person ids, to
   // keep track as we generate households.
   dh.count = 0;
-  dh.total = get_agent_Person_default_count();
+  dh.total = populationInfo.totalPopulationSize;
   dh.order = (unsigned int*)malloc(dh.total * sizeof(unsigned int));
 
 
@@ -1413,7 +1388,10 @@ __FLAME_GPU_INIT_FUNC__ void initialiseHost()
 
   setConstants();
 
-  // deallocating the memory
+  // deallocating the memory - people are not added until the end as allocate functions are still setting memberships
+  h_add_agents_Person_default(h_person_AoS, personCounter);
+  h_free_agent_Person_array(&h_person_AoS, personCounter);
+
   free(dh.order);
   free(dh.activepeople);
 }
@@ -1523,8 +1501,7 @@ __FLAME_GPU_EXIT_FUNC__ void exitFunction()
   h_free_agent_TBAssignment_array(&h_tbassignment_AoS, h_tbassignment_AoS_MAX);
   h_free_agent_ChurchMembership_array(&h_chumembership_AoS,
                                       h_chumembership_AoS_MAX);
-  h_free_agent_TransportMembership_array(&h_trmembership_AoS,
-                                         h_trmembership_AoS_MAX);
+
 
   unsigned int population =
       get_agent_Person_s2_count() + get_agent_Household_hhdefault_count() +
@@ -1838,7 +1815,7 @@ hhupdate(xmachine_memory_Household *household,
   while (location_message)
   {
     qsum += location_message->q;
-    // printf("%u", qsum); // not required
+    //printf("%u", qsum); // not required
     location_message =
         get_next_location_message(location_message, location_messages, message_bounds);
   }
@@ -2030,35 +2007,6 @@ tbinit(xmachine_memory_TBAssignment *tbassignment,
   return 1;
 }
 
-__FLAME_GPU_FUNC__ int wpinit(
-    xmachine_memory_WorkplaceMembership *wpmembership,
-    xmachine_message_workplace_membership_list *workplace_membership_messages)
-{
-  add_workplace_membership_message(workplace_membership_messages,
-                                   wpmembership->person_id,
-                                   wpmembership->workplace_id);
-  return 1;
-}
-
-__FLAME_GPU_FUNC__ int
-schinit(xmachine_memory_SchoolMembership *schmembership,
-        xmachine_message_school_membership_list *school_membership_messages)
-{
-  add_school_membership_message(school_membership_messages,
-                                schmembership->person_id,
-                                schmembership->school_id);
-  return 1;
-}
-
-__FLAME_GPU_FUNC__ int trinit(
-    xmachine_memory_TransportMembership *trmembership,
-    xmachine_message_transport_membership_list *transport_membership_messages)
-{
-  add_transport_membership_message(
-      transport_membership_messages, trmembership->person_id,
-      trmembership->transport_id, trmembership->duration);
-  return 1;
-}
 
 __FLAME_GPU_FUNC__ int
 chuinit(xmachine_memory_ChurchMembership *chumembership,
@@ -2153,74 +2101,7 @@ persontbinit(xmachine_memory_Person *person,
 }
 
 /* These init functions scan the entire list of membership messages to set the person agent's membership values - these don't change through a sim so should bet set at initialisation instead. */
-__FLAME_GPU_FUNC__ int personschinit(
-    xmachine_memory_Person *person,
-    xmachine_message_school_membership_list *school_membership_messages)
-{
-  unsigned int personid = person->id;
-  person->school = -1;
-  xmachine_message_school_membership *school_membership_message =
-      get_first_school_membership_message(school_membership_messages);
 
-  while (school_membership_message)
-  {
-    if (school_membership_message->person_id == personid)
-    {
-      person->school = school_membership_message->school_id;
-    }
-    school_membership_message = get_next_school_membership_message(
-        school_membership_message, school_membership_messages);
-  }
-
-  return 0;
-}
-
-__FLAME_GPU_FUNC__ int personwpinit(
-    xmachine_memory_Person *person,
-    xmachine_message_workplace_membership_list *workplace_membership_messages)
-{
-  unsigned int personid = person->id;
-  person->workplace = -1;
-  xmachine_message_workplace_membership *workplace_membership_message =
-      get_first_workplace_membership_message(workplace_membership_messages);
-
-  while (workplace_membership_message)
-  {
-    if (workplace_membership_message->person_id == personid)
-    {
-      person->workplace = workplace_membership_message->workplace_id;
-    }
-    workplace_membership_message = get_next_workplace_membership_message(
-        workplace_membership_message, workplace_membership_messages);
-  }
-
-  return 0;
-}
-
-__FLAME_GPU_FUNC__ int persontrinit(
-    xmachine_memory_Person *person,
-    xmachine_message_transport_membership_list *transport_membership_messages)
-{
-  unsigned int personid = person->id;
-  xmachine_message_transport_membership *transport_membership_message =
-      get_first_transport_membership_message(transport_membership_messages);
-
-  while (transport_membership_message)
-  {
-    if (transport_membership_message->person_id == personid)
-    {
-      person->transport = transport_membership_message->transport_id;
-      person->transportdur = transport_membership_message->duration;
-    }
-    else
-    {
-    }
-    transport_membership_message = get_next_transport_membership_message(
-        transport_membership_message, transport_membership_messages);
-  }
-
-  return 0;
-}
 __FLAME_GPU_FUNC__ int personhhinit(
     xmachine_memory_Person *person,
     xmachine_message_household_membership_list *household_membership_messages)
