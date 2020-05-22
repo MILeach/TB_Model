@@ -1925,39 +1925,27 @@
       <gpu:layerFunction>
         <name>hhupdate</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+  
       <gpu:layerFunction>
         <name>chuupdate</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+   
       <gpu:layerFunction>
         <name>trupdate</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+    
       <gpu:layerFunction>
         <name>clupdate</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+   
       <gpu:layerFunction>
         <name>wpupdate</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+   
       <gpu:layerFunction>
         <name>bupdate</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+  
       <gpu:layerFunction>
         <name>schupdate</name>
       </gpu:layerFunction>
@@ -1967,39 +1955,27 @@
       <gpu:layerFunction>
         <name>updatelambdahh</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+   
       <gpu:layerFunction>
         <name>updatelambdachu</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+  
       <gpu:layerFunction>
         <name>updatelambdatr</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+   
       <gpu:layerFunction>
         <name>updatelambdacl</name>
       </gpu:layerFunction>
-    </layer>
    
-    <layer>
       <gpu:layerFunction>
         <name>updatelambdawp</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+  
       <gpu:layerFunction>
         <name>updatelambdab</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+   
       <gpu:layerFunction>
         <name>updatelambdasch</name>
       </gpu:layerFunction>
@@ -2016,39 +1992,27 @@
       <gpu:layerFunction>
         <name>tbinit</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+   
       <gpu:layerFunction>
         <name>schinit</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+    
       <gpu:layerFunction>
         <name>wpinit</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+   
       <gpu:layerFunction>
         <name>trinit</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+    
       <gpu:layerFunction>
         <name>chuinit</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+    
       <gpu:layerFunction>
         <name>hhinit</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+   
       <gpu:layerFunction>
         <name>schinit</name>
       </gpu:layerFunction>
@@ -2058,27 +2022,19 @@
       <gpu:layerFunction>
         <name>personschinit</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+   
       <gpu:layerFunction>
         <name>personwpinit</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+  
       <gpu:layerFunction>
         <name>persontrinit</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+    
       <gpu:layerFunction>
         <name>persontbinit</name>
       </gpu:layerFunction>
-    </layer>
-
-    <layer>
+   
       <gpu:layerFunction>
         <name>personhhinit</name>
       </gpu:layerFunction>

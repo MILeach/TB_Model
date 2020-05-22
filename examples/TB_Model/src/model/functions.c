@@ -1517,6 +1517,7 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
   unsigned int hour = t.hour;
   unsigned int minute = t.minute;
 
+  // If the person isn't busy
   if (person->busy == 0)
   {
     if (hour == 20 && minute == 0 && person->church != -1)
@@ -1642,7 +1643,7 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
       person->locationid = 0;
     }
   }
-  else
+  else // Person is busy already
   {
     if (person->location == 1 &&
         (float)(person->step - person->startstep) >= person->churchdur * 12)
@@ -1700,6 +1701,8 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
     }
   }
 
+
+  // Move these to array for direct indexing rather than all the branches?
   if (person->location == 0 && person->busy == 1)
   {
     person->timevisiting += 5 * TIME_STEP;
