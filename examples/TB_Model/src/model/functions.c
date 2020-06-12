@@ -12,19 +12,13 @@
 #include <direct.h>
 #define GetCurrentDir _getcwd
 
-#define INSTRUMENT_INIT_FUNCTIONS 1
-#define INSTRUMENT_AGENT_FUNCTIONS 1
-#define INSTRUMENT_ITERATIONS 1
+// Uncomment to enable profiling logging in the console
+//#define INSTRUMENT_INIT_FUNCTIONS 1 // Initialisation time
+//#define INSTRUMENT_AGENT_FUNCTIONS 1 // Time for each agent function
+//#define INSTRUMENT_ITERATIONS 1 // Time for each iteration
 
-#define HOUSEHOLD 0
-#define CHURCH 1
-#define TRANSPORT 2
-#define CLINIC 3
-#define WORKPLACE 4
-#define BAR 5
-#define SCHOOL 6
-#define OUTSIDE 7
-
+// HOUSEHOLD = 0, CHURCH = 1 etc.
+enum Location { HOUSEHOLD, CHURCH, TRANSPORT, CLINIC, WORKPLACE, BAR, SCHOOL, OUTSIDE };
 
 // Allocate blocks of memory for each type of agent, and defining a constant
 // for the maximum number of each that should be generated.
@@ -246,6 +240,7 @@ __device__ struct Time timeofday(unsigned int step)
   return t;
 }
 
+// Used for networked messaging - essentially provides a unique index for each location to read/write messages to/from
 __device__ unsigned int locationToEdgeID(unsigned int location, unsigned int locationID) {
 	return LOCATION_EDGE_OFFSETS[location] + locationID;
 }
@@ -273,21 +268,18 @@ typedef struct PopulationInfo {
 	AgeGenderCategory* ageGenderCategories;
 } PopulationInfo;
 
+
+// Holder for all the arrays used during initialisation - in future it would be good to refactor these so they are local to where they're used
 typedef struct DataHolder {
 	unsigned int ages[h_agent_AoS_MAX];
-
 	unsigned int daycount = 0;
 	unsigned int transport[h_agent_AoS_MAX];
 	unsigned int days[h_agent_AoS_MAX];
-
 	unsigned int tbarray[h_agent_AoS_MAX];
 	float weights[h_agent_AoS_MAX];
-
 	unsigned int employedcount = 0;
 	unsigned int workarray[h_agent_AoS_MAX];
-
 	unsigned int barcount = 0;
-
 	unsigned int childcount = 0;
 	unsigned int schoolarray[h_agent_AoS_MAX];
 
@@ -311,6 +303,7 @@ typedef struct DataHolder {
 	signed int count;
 } DataHolder;
 
+// Reads the data file and stores all the information 
 PopulationInfo readInputFile() {
 	PopulationInfo populationInfo;
 
@@ -347,12 +340,11 @@ PopulationInfo readInputFile() {
 		populationInfo.ageGenderCategories[i].minage = strtol(fgets(line, sizeof(line), file), NULL, 0);
 		populationInfo.numPeopleInHouseholdSize[i] = 0;
 
-		// Add one to minage unless minage is 0? Why??? TODO: Check with Pete Dodd if this is correct
+		// Add one to minage unless minage is 0? Why? TODO: Check with Pete Dodd if this is correct
 		if ((int)populationInfo.ageGenderCategories[i].minage != 0)
 		{
 			populationInfo.ageGenderCategories[i].minage++;
 		}
-
 
 		// Set max age for the ageGenderCategory
 		char* maxagestring = fgets(line, sizeof(line), file);
@@ -383,7 +375,7 @@ PopulationInfo readInputFile() {
 
 void initAgentTypes() {
 	// Initialise all of the agent types with an id of 1 and allocating an array
-	// of memory for each one.
+	// of memory for each one. TODO: Should these be starting from 1 or 0?
 	h_nextID = 1;
 	h_agent_AoS = h_allocate_agent_Person_array(h_agent_AoS_MAX);
 	h_nextHouseholdID = 1;
@@ -405,12 +397,8 @@ void initAgentTypes() {
 		h_allocate_agent_ChurchMembership_array(h_chumembership_AoS_MAX);
 }
 
-/* Each of the 'decide' functions have no dependency on any other agent. They each use a randomly generated number & set of probabilities to decide the properties of the person.
-   For example, their ages, whether they go to bars, how often they use transport. Many of the functions write the agent id into an array which is then later used by the
-   allocation functions. This writing to the list is the only bit which might not work well on GPU/in parallel - needs more attention - possibly messages are a good fit for this. 
-   Some also track global counters - would typically be done in step function I guess? Maybe with function condition so only runs once*. But some write to multiple arrays and we 
-   can only have one message - Need to check how it is used - could it be stored on agent instead or mapped with a single message, or separated into individual functions which 
-   produce multiple messages between them. */
+/* Each of the 'decide' functions have no dependency on any other agent and could be run concurrently in FGPU2. They each use a randomly generated number & set of probabilities to decide the properties of the person.
+   For example, their ages, whether they go to bars, how often they use transport. */
 
 void decideAgeHivArt(xmachine_memory_Person *h_person, DataHolder& dh, const PopulationInfo& populationInfo, int minage, int maxage, int gender) {
 
@@ -738,16 +726,12 @@ void decideSchool(xmachine_memory_Person *h_person, DataHolder& dh) {
 	}
 }
 
-/* Init people generates the person agents. If there is a good way to allocate initial categories to agents, all of this could be done based on a generic population file/set of agents.
-   Each agent is capable of initialising itself as long as it knows its gender and categroy + has access to the min/max ages for the category. This could possibly be achieved by submitting
-   a list of id ranges for each category + household size on initialisation, from which each agent could draw the correct values. Another possibility is generating sets of agents using a
-   different kernel invocation for each, though unsure how well this fits with FLAME. Could have 'category' agents which output a message giving their parameters which can be read by person
-   agents. Category agents could then delete themselves after initialisation. */
+/* Init people generates the person agents. */
 void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 	float max_age = *get_MAX_AGE();
 	float starting_population = *get_STARTING_POPULATION();
 
-	// Allocate memory for the agent we are generating.
+	// Allocate memory for the agents we are generating.
 	h_person_AoS = h_allocate_agent_Person_array((int)(starting_population));
 
 	// This loop runs once for each age/gender category, so once for every row in
@@ -775,7 +759,7 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 			// generate the person agents.
 			for (unsigned int k = 0; k < rounded; k++)
 			{
-				// Allocate memory for the agent we are generating.
+				// Set pointer to this person.
 				xmachine_memory_Person *h_person = h_person_AoS[personCounter];
 
 				// Assign the variables for the person agent based on information from
@@ -793,7 +777,6 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 
 				dh.sizesarray[h_person->id - 1] = currentsize;
 
-				// Generate the agent and free them from memory on the host.
 				h_person->lastinfected = -1;
 				h_person->lastinfectedid = -1;
 				h_person->lastinfectedtime = -1;
@@ -1322,7 +1305,7 @@ void setConstants() {
 	set_E(&e);
 
 
-	// Set location edge offsets
+	// Set location edge offsets for network based messaging
 	// Get number of each type of location agent
 	unsigned int h_LOCATION_EDGE_OFFSETS[10];
 	unsigned int numHouseholds = get_agent_Household_hhdefault_count();
@@ -1399,7 +1382,6 @@ __FLAME_GPU_INIT_FUNC__ void initialiseHost()
 // Function that prints out the number of agents generated after initialisation.
 __FLAME_GPU_INIT_FUNC__ void generateAgentsInit()
 {
-
   printf("Population after init function: %u\n",
          get_agent_Person_default_count());
 }
@@ -1516,7 +1498,7 @@ __FLAME_GPU_EXIT_FUNC__ void exitFunction()
 // The update functions for each agent type, which are involved in deciding
 // where a person is at a given time.
 
-/* This function updates a person agent - all the if conditions should perhaps be mapped to agent states*/
+/* This function updates a person agent by deciding what they are doing/where they are this timestep*/
 __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
                               xmachine_message_location_list *location_messages,
                               RNG_rand48 *rand48)
@@ -1528,25 +1510,26 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
   unsigned int hour = t.hour;
   unsigned int minute = t.minute;
 
-  // If the person isn't busy
+  // If the person isn't busy, decide what they are going to do
   if (person->busy == 0)
   {
+	// If 8PM & person is a church-goer
     if (hour == 20 && minute == 0 && person->church != -1)
     {
       if (person->churchfreq == 0)
       {
         float random = rnd<CONTINUOUS>(rand48);
 
-        if (random < PROB)
+        if (random < PROB) // Person goes to church
         {
           person->startstep = person->step;
           person->busy = 1;
-          person->location = 1;
+          person->location = CHURCH;
           person->locationid = person->church;
         }
-        else
+        else // Person stays at home
         {
-          person->location = 0;
+          person->location = HOUSEHOLD;
           person->locationid = person->household;
         }
       }
@@ -1558,38 +1541,42 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
         person->locationid = person->church;
       }
     }
+	// If it's a transport day and the person uses transport
     else if (person->transportdur != 0 &&
              (day == person->transportday1 || day == person->transportday2))
     {
-      if ((hour == 7 && minute == 0) || (hour == 18 && minute == 0))
+      if ((hour == 7 && minute == 0) || (hour == 18 && minute == 0)) // Person takes journey if it is the right time of day
       {
         person->startstep = person->step;
         person->busy = 1;
-        person->location = 2;
+        person->location = TRANSPORT;
         person->locationid = person->transport;
       }
-      else
+      else // Otherwise person stays at home
       {
-        person->location = 0;
+        person->location = HOUSEHOLD;
         person->locationid = person->household;
       }
     }
+	// Should person go to clinic
     else if (person->art == 1 && monthday == person->artday && hour == 9 &&
              minute == 0)
     {
       person->startstep = person->step;
       person->busy = 1;
-      person->location = 3;
+      person->location = CLINIC;
       person->locationid = 1;
     }
+	// Go to work
     else if (person->workplace != -1 && day != 0 && day != 6 && hour == 9 &&
              minute == 0)
     {
       person->startstep = person->step;
       person->busy = 1;
-      person->location = 4;
+      person->location = WORKPLACE;
       person->locationid = person->workplace;
     }
+	// Visit another house
     else if (hour == 0 && minute == 0)
     {
       float prob = 0.23;
@@ -1602,18 +1589,20 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
 
         person->startstep = person->step;
         person->busy = 1;
-        person->location = 0;
+        person->location = HOUSEHOLD;
         person->locationid = randomhouse;
       }
     }
+	// Visit a bar
     else if (person->bargoing != 0 && hour == 1 && minute == 0)
     {
       if (person->bargoing == 1 && person->barday > day)
       {
         person->startstep = person->step;
         person->busy = 1;
-        person->location = 5;
+        person->location = BAR;
 
+		// Select a random bar to go to
         float random = rnd<CONTINUOUS>(rand48);
         unsigned int randombar = ceil(random * BARS);
 
@@ -1623,87 +1612,96 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
       {
         person->startstep = person->step;
         person->busy = 1;
-        person->location = 5;
+        person->location = BAR;
 
         float random = rnd<CONTINUOUS>(rand48);
         unsigned int randombar = ceil(random * BARS);
 
         person->locationid = randombar;
       }
-      else
+      else // If not going to the bar today, stay at home
       {
-        person->location = 0;
+        person->location = HOUSEHOLD;
         person->locationid = person->household;
       }
     }
+	// See if person should go to school
     else if (person->school != -1 && hour == 9 && minute == 0)
     {
       person->startstep = person->step;
       person->busy = 1;
-      person->location = 6;
+      person->location = SCHOOL;
       person->locationid = person->school;
     }
+	// If between 8pm and 6am, person is in the house
     else if (hour >= 20 || hour <= 6)
     {
-      person->location = 0;
+      person->location = HOUSEHOLD;
       person->locationid = person->household;
     }
-    else
+    else // Otherwise, person is outside
     {
-      person->location = 7;
+      person->location = OUTSIDE;
       person->locationid = 0;
     }
   }
   else // Person is busy already
   {
-    if (person->location == 1 &&
+	// If person is at church and the service has finished, go home
+    if (person->location == CHURCH &&
         (float)(person->step - person->startstep) >= person->churchdur * 12)
     {
       person->busy = 0;
-      person->location = 0;
+      person->location = HOUSEHOLD;
       person->locationid = person->household;
     }
-    else if (person->location == 2 &&
+	// If transport journey complete, person now goes outside
+    else if (person->location == TRANSPORT &&
              (float)(person->step - person->startstep) >=
                  person->transportdur / 5)
     {
       person->busy = 0;
-      person->location = 7;
+      person->location = OUTSIDE;
       person->locationid = 0;
     }
-    else if (person->location == 3 &&
+	// If person is finished at the clinic, go outside
+    else if (person->location == CLINIC &&
              (float)(person->step - person->startstep) >=
                  (CLINIC_DUR * 12 * TIME_STEP))
     {
       person->busy = 0;
-      person->location = 7;
+      person->location = OUTSIDE;
       person->locationid = 0;
     }
-    else if (person->location == 4 &&
+	// If the person is finished at work, go outside
+    else if (person->location == WORKPLACE &&
              (float)(person->step - person->startstep) >=
                  WORKPLACE_DUR * 12 * TIME_STEP)
     {
       person->busy = 0;
-      person->location = 7;
+      person->location = OUTSIDE;
       person->locationid = 0;
     }
-    else if (person->location == 5 &&
+	// If the person has finished at the bar, go home
+    else if (person->location == BAR &&
              (float)(person->step - person->startstep) >=
                  ((BAR_DUR / 5) * TIME_STEP))
     {
       person->busy = 0;
-      person->location = 0;
+      person->location = HOUSEHOLD;
       person->locationid = person->household;
     }
-    else if (person->location == 6 &&
+	// If the person has finished at school, go outside
+    else if (person->location == SCHOOL &&
              (float)(person->step - person->startstep) >=
                  (SCHOOL_DUR * 12 * TIME_STEP))
     {
       person->busy = 0;
-      person->location = 7;
+      person->location = OUTSIDE;
       person->locationid = 0;
     }
-    else if (person->location == 0 &&
+	// If the person has finished visiting another household, go home
+    else if (person->location == HOUSEHOLD &&
              (float)(person->step - person->startstep) >=
                  ((VISITING_DUR / 12) * TIME_STEP))
     {
@@ -1713,44 +1711,45 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
   }
 
 
-  // Move these to array for direct indexing rather than all the branches?
-  if (person->location == 0 && person->busy == 1)
+  // Track time spent at the person's location for this timestep
+  if (person->location == HOUSEHOLD && person->busy == 1)
   {
     person->timevisiting += 5 * TIME_STEP;
   }
-  else if (person->location == 0)
+  else if (person->location == HOUSEHOLD)
   {
     person->householdtime += 5 * TIME_STEP;
   }
-  else if (person->location == 1)
+  else if (person->location == CHURCH)
   {
     person->churchtime += 5 * TIME_STEP;
   }
-  else if (person->location == 2)
+  else if (person->location == TRANSPORT)
   {
     person->transporttime += 5 * TIME_STEP;
   }
-  else if (person->location == 3)
+  else if (person->location == CLINIC)
   {
     person->clinictime += 5 * TIME_STEP;
   }
-  else if (person->location == 4)
+  else if (person->location == WORKPLACE)
   {
     person->workplacetime += 5 * TIME_STEP;
   }
-  else if (person->location == 5)
+  else if (person->location == BAR)
   {
     person->bartime += 5 * TIME_STEP;
   }
-  else if (person->location == 6)
+  else if (person->location == SCHOOL)
   {
     person->schooltime += 5 * TIME_STEP;
   }
-  else if (person->location == 7)
+  else if (person->location == OUTSIDE)
   {
     person->outsidetime += 5 * TIME_STEP;
   }
 
+  // If the person is an active carrier of TB, add a message stating their location
   if (person->activetb == 1)
   {
     add_location_message(location_messages, person->id, person->location,
@@ -1796,8 +1795,7 @@ __FLAME_GPU_FUNC__ int infect(xmachine_memory_Person *person,
 }
 /* Each locationtype update function computes a 'qsum' from location messages which is then used to compute the lambda value for the location. 
    Location messages come from each agent, and the q value is also that of the person. Hence each location here is summing the q values of the
-   person agents who are at that location to compute qsum. Networked messaging would again speed this up dramatically.
-   Each locationtype agent then outputs an infection message. 
+   person agents who are at that location to compute qsum. Each locationtype agent then outputs an infection message. 
    
    location_message->location is the type of place, e.g. bar, church, household. */
 __FLAME_GPU_FUNC__ int
