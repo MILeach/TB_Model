@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <vector>
-
+#include <fstream>
 
 #include <direct.h>
 #define GetCurrentDir _getcwd
@@ -16,6 +16,9 @@
 //#define INSTRUMENT_INIT_FUNCTIONS 1 // Initialisation time
 //#define INSTRUMENT_AGENT_FUNCTIONS 1 // Time for each agent function
 //#define INSTRUMENT_ITERATIONS 1 // Time for each iteration
+
+#define MEGACHURCH_TEST
+#define OUTPUT_POPULATION_PER_ITERATION 0
 
 // HOUSEHOLD = 0, CHURCH = 1 etc.
 enum Location { HOUSEHOLD, CHURCH, TRANSPORT, CLINIC, WORKPLACE, BAR, SCHOOL, OUTSIDE };
@@ -54,14 +57,14 @@ const unsigned int h_schmembership_AoS_MAX = 16384;
 
 // Create variables for the next unused ID for each agent type, so that they
 // remain unique, and also get functions to update the ID each time.
-unsigned int h_nextID;
-unsigned int h_nextHouseholdID;
-unsigned int h_nextChurchID;
-unsigned int h_nextTransportID;
-unsigned int h_nextClinicID;
-unsigned int h_nextWorkplaceID;
-unsigned int h_nextBarID;
-unsigned int h_nextSchoolID;
+unsigned int h_nextID = 0;
+unsigned int h_nextHouseholdID = 0;
+unsigned int h_nextChurchID = 0;
+unsigned int h_nextTransportID = 0;
+unsigned int h_nextClinicID = 0;
+unsigned int h_nextWorkplaceID = 0;
+unsigned int h_nextBarID = 0;
+unsigned int h_nextSchoolID = 0;
 
 unsigned int personCounter = 0;
 
@@ -376,18 +379,18 @@ PopulationInfo readInputFile() {
 void initAgentTypes() {
 	// Initialise all of the agent types with an id of 1 and allocating an array
 	// of memory for each one. TODO: Should these be starting from 1 or 0?
-	h_nextID = 1;
+	h_nextID = 0;
 	h_agent_AoS = h_allocate_agent_Person_array(h_agent_AoS_MAX);
-	h_nextHouseholdID = 1;
+	h_nextHouseholdID = 0;
 	h_household_AoS = h_allocate_agent_Household_array(h_household_AoS_MAX);
-	h_nextChurchID = 1;
+	h_nextChurchID = 0;
 	h_church_AoS = h_allocate_agent_Church_array(h_church_AoS_MAX);
-	h_nextTransportID = 1;
+	h_nextTransportID = 0;
 	h_transport_AoS = h_allocate_agent_Transport_array(h_transport_AoS_MAX);
-	h_nextClinicID = 1;
-	h_nextWorkplaceID = 1;
+	h_nextClinicID = 0;
+	h_nextWorkplaceID = 0;
 	h_workplace_AoS = h_allocate_agent_Workplace_array(h_workplace_AoS_MAX);
-	h_nextBarID = 1;
+	h_nextBarID = 0;
 	h_bar_AoS = h_allocate_agent_Bar_array(h_bar_AoS_MAX);
 	h_tbassignment_AoS =
 		h_allocate_agent_TBAssignment_array(h_tbassignment_AoS_MAX);
@@ -501,11 +504,11 @@ void decideAgeHivArt(xmachine_memory_Person *h_person, DataHolder& dh, const Pop
 		weight = rr_as;
 	}
 
-	dh.weights[h_person->id - 1] = weight;
+	dh.weights[h_person->id] = weight;
 
 	// Update the arrays of information with this person's household size
 	// and age.
-	dh.ages[h_person->id - 1] = age;
+	dh.ages[h_person->id] = age;
 }
 
 void decideTransport(xmachine_memory_Person *h_person, DataHolder& dh) {
@@ -775,7 +778,7 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 				decideBar(h_person, dh);
 				decideSchool(h_person, dh);
 
-				dh.sizesarray[h_person->id - 1] = currentsize;
+				dh.sizesarray[h_person->id] = currentsize;
 
 				h_person->lastinfected = -1;
 				h_person->lastinfectedid = -1;
@@ -1039,7 +1042,7 @@ void allocateWorkplaces(DataHolder& dh) {
 			if (employedpos < dh.employedcount)
 			{
 				unsigned int person_id = dh.workarray[employedpos];
-				h_person_AoS[person_id - 1]->workplace = h_workplace->id;
+				h_person_AoS[person_id]->workplace = h_workplace->id;
 
 				employedpos++;
 			}
@@ -1127,18 +1130,24 @@ void allocateChurches(DataHolder& dh) {
 		// Allocate households to the church until it has reached its capacity of
 		// adults, as defined by the size of the church.
 		dh.count = 0;
+		
 
+#ifdef MEGACHURCH_TEST
+		while (hhposition < hhtotal) 
+#else
 		while (capacity < h_church->size && hhposition < hhtotal)
+#endif
 		{
 			xmachine_memory_ChurchMembership *h_chumembership = h_chumemberships[hhposition];
 			h_chumembership->church_id = h_church->id;
 			h_chumembership->household_id = hhorder[hhposition];
 			h_chumembership->churchdur = duration;
 
-			if (dh.activehouseholds[hhorder[hhposition]] == 1)
-			{
+			// TODO: Commented out to ensure chuupdate function runs
+			//if (dh.activehouseholds[hhorder[hhposition]] == 1)
+			//{
 				h_church->active = 1;
-			}
+			//}
 
 			dh.count++;
 			capacity += dh.adult[hhposition];
@@ -1286,7 +1295,8 @@ void setConstants() {
 	float workplace_exp = exp(-workplace_a * (time_step / 12));
 	float bar_exp = exp(-bar_a * (time_step / 12));
 	float school_exp = exp(-school_a * (time_step / 12));
-	float prob = 1 - exp(6.0 / 365);
+	// TODO: Check if this is correct - unlikely as it gives negative probability
+	float prob = 1.0f;// 1 - exp(6.0 / 365);
 
 	set_HOUSEHOLD_EXP(&household_exp);
 	set_CHURCH_EXP(&church_exp);
@@ -1363,11 +1373,13 @@ __FLAME_GPU_INIT_FUNC__ void initialiseHost()
   allocateTB(dh);
   initHouseholds(populationInfo, dh);
   allocateChurches(dh);
+#ifndef MEGACHURCH_TEST
   allocateTransport(dh, populationInfo);
   allocateClinics();
   allocateWorkplaces(dh);
   allocateBars(dh);
   allocateSchools(dh);
+#endif
 
   setConstants();
 
@@ -1390,6 +1402,10 @@ __FLAME_GPU_INIT_FUNC__ void generateAgentsInit()
 // iteration and saves data whenever specified.
 __FLAME_GPU_EXIT_FUNC__ void customOutputFunction()
 {
+
+  // Array to track when infections took place
+	std::vector<int> infectionFreq;
+	infectionFreq.resize(500);
 
   // Assign a variable for the directory where our files will be output, and
   // check which iteration we are currently on.
@@ -1450,7 +1466,14 @@ __FLAME_GPU_EXIT_FUNC__ void customOutputFunction()
               get_Person_s2_variable_lastinfected(index),
               get_Person_s2_variable_lastinfectedid(index),
               get_Person_s2_variable_lastinfectedtime(index));
+
+	  int infectedtime = get_Person_s2_variable_lastinfectedtime(index);
+	  if (infectedtime >= 0) {
+		  infectionFreq[infectedtime / 5] += 1;
+	  }
     }
+	
+	
 
     fflush(fp);
   }
@@ -1467,6 +1490,21 @@ __FLAME_GPU_EXIT_FUNC__ void customOutputFunction()
     fclose(fp);
     fp = nullptr;
   }
+
+  // Compute cumulative frequency for infections
+  for (int i = 1; i < infectionFreq.size(); i++) {
+	  infectionFreq[i] = infectionFreq[i - 1] + infectionFreq[i];
+  }
+
+  // Save c.f. to file
+  std::ofstream cfFile("iterations/infection_cf.csv");
+  if (cfFile.is_open()) {
+	  for (int i = 0; i < infectionFreq.size(); i++) {
+		  cfFile << infectionFreq[i] << std::endl;
+	  }
+  }
+
+
 }
 
 // At the end of the run, free all of the agents from memory and output the
@@ -1539,8 +1577,10 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
         person->busy = 1;
         person->location = 1;
         person->locationid = person->church;
+		printf("Gone to church");
       }
     }
+#ifndef MEGACHURCH_TEST
 	// If it's a transport day and the person uses transport
     else if (person->transportdur != 0 &&
              (day == person->transportday1 || day == person->transportday2))
@@ -1644,6 +1684,7 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
       person->location = OUTSIDE;
       person->locationid = 0;
     }
+#endif
   }
   else // Person is busy already
   {
@@ -1749,9 +1790,15 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
     person->outsidetime += 5 * TIME_STEP;
   }
 
+#ifdef MEGACHURCH_TEST
+  person->location = CHURCH;
+  person->locationid = person->church;
+#endif
+
   // If the person is an active carrier of TB, add a message stating their location
-  if (person->activetb == 1)
+  if (person->activetb == 1 && person->location == CHURCH)
   {
+	  
     add_location_message(location_messages, person->id, person->location,
                          person->locationid, person->p, person->q, locationToEdgeID(person->location, person->locationid));
   }
@@ -1769,8 +1816,9 @@ updatelambda(xmachine_memory_Person *person,
 	// Each location only outputs a single message so we know there will only be one message
 	xmachine_message_infection *infection_message =
 		get_first_infection_message(infection_messages, message_bounds, locationToEdgeID(person->location, person->locationid));
-	
-	person->lambda = infection_message->lambda;
+	if (infection_message) {
+		person->lambda = infection_message->lambda;
+	}
 	return 0;
 }
 
@@ -1782,13 +1830,15 @@ __FLAME_GPU_FUNC__ int infect(xmachine_memory_Person *person,
 
   float prob = 1 - device_exp(-person->p * person->lambda * (TIME_STEP / 12));
   float random = rnd<CONTINUOUS>(rand48);
-
+  //printf("Infection prob %f, p: %f, lambda: %f \n", prob, person->p, person->lambda);
   if (random < prob)
   {
     person->infections++;
     person->lastinfected = person->location;
     person->lastinfectedid = person->locationid;
     person->lastinfectedtime = person->step * 5 * TIME_STEP;
+	person->activetb = true;
+	printf("New infection\n");
   }
 
   return 0;
@@ -1834,23 +1884,29 @@ chuupdate(xmachine_memory_Church *church,
 		  xmachine_message_location_bounds* message_bounds,
           xmachine_message_infection_list *infection_messages)
 {
-
+  
   float qsum = 0;
-
+  //printf("CHURCH, church->id, locationToEdgeID: %u, %u, %u \n", CHURCH, church->id, locationToEdgeID(CHURCH, church->id));
   xmachine_message_location *location_message =
       get_first_location_message(location_messages, message_bounds, locationToEdgeID(CHURCH, church->id));
 
-  while (location_message)
+   while (location_message)
   {
+	//   printf("q: %f \n", location_message->q);
     qsum += location_message->q;
     location_message =
         get_next_location_message(location_message, location_messages, message_bounds);
   }
 
+  //printf("Church qsum: %f", qsum);
+
+  // Lambda computed as: 
+  // Previous lambda * decay factor + scaled qsum * (1-decay factor) 
+  // So really dependent on qsum, from location messages
   church->lambda = (church->lambda * CHURCH_EXP) +
                    ((qsum / (CHURCH_V_MULTIPLIER * church->size * CHURCH_A)) *
                     (1 - CHURCH_EXP));
-
+  //printf("Church lambda: %f", church->lambda);
   add_infection_message(infection_messages, church->id, church->lambda, locationToEdgeID(CHURCH, church->id));
 
   return 0;

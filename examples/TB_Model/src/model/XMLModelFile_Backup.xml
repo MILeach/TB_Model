@@ -1,0 +1,1601 @@
+<?xml version="1.0" encoding="utf-8"?>
+<gpu:xmodel xmlns:gpu="http://www.dcs.shef.ac.uk/~paul/XMMLGPU" 
+  xmlns="http://www.dcs.shef.ac.uk/~paul/XMML">
+  <name>Project</name>
+  <gpu:environment>
+    <!-- Variables that can be set in the input data -->
+    <gpu:constants>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>LOCATION_EDGE_OFFSETS</name>
+        <description>Stores the indices into the edge_ids for each location type</description>
+        <arrayLength>10</arrayLength>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>TIME_STEP</name>
+        <defaultValue>1.0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>MAX_AGE</name>
+        <defaultValue>100</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>STARTING_POPULATION</name>
+        <defaultValue>30000.0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_BETA0</name>
+        <defaultValue>2.19261</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_BETA1</name>
+        <defaultValue>0.14679</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>CHURCH_K1</name>
+        <defaultValue>13</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>CHURCH_K2</name>
+        <defaultValue>35</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>CHURCH_K3</name>
+        <defaultValue>100</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_P1</name>
+        <defaultValue>0.14</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_P2</name>
+        <defaultValue>0.32</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_PROB0</name>
+        <defaultValue>0.285569106</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_PROB1</name>
+        <defaultValue>0.704268293</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_PROB2</name>
+        <defaultValue>0.864329269</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_PROB3</name>
+        <defaultValue>0.944613822</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_PROB4</name>
+        <defaultValue>0.978658537</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_PROB5</name>
+        <defaultValue>0.981707317</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_PROB6</name>
+        <defaultValue>0.985772358</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_PROPORTION</name>
+        <defaultValue>0.5</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>TRANSPORT_BETA0</name>
+        <defaultValue>1.682127</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>TRANSPORT_BETA1</name>
+        <defaultValue>-0.007739</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>TRANSPORT_FREQ0</name>
+        <defaultValue>0.4337998</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>TRANSPORT_FREQ2</name>
+        <defaultValue>0.8439182</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>TRANSPORT_DUR20</name>
+        <defaultValue>0.5011086</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>TRANSPORT_DUR45</name>
+        <defaultValue>0.8381374</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>TRANSPORT_SIZE</name>
+        <defaultValue>15</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>HIV_PREVALENCE</name>
+        <defaultValue>0.14</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>ART_COVERAGE</name>
+        <defaultValue>0.21</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>RR_HIV</name>
+        <defaultValue>4.5</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>RR_ART</name>
+        <defaultValue>0.4</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>TB_PREVALENCE</name>
+        <defaultValue>0.005</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>DEFAULT_M_P</name>
+        <defaultValue>0.36</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>DEFAULT_F_P</name>
+        <defaultValue>0.36</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>DEFAULT_Q</name>
+        <defaultValue>1</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>DEFAULT_K</name>
+        <defaultValue>1</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>DELTA</name>
+        <defaultValue>0.5</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>THETA</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>TRANSPORT_A</name>
+        <defaultValue>3</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_A</name>
+        <defaultValue>3</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CLINIC_A</name>
+        <defaultValue>3</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>HOUSEHOLD_A</name>
+        <defaultValue>3</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>TRANSPORT_V</name>
+        <defaultValue>20</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>HOUSEHOLD_V</name>
+        <defaultValue>30</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CLINIC_V</name>
+        <defaultValue>40</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_V_MULTIPLIER</name>
+        <defaultValue>1</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>WORKPLACE_BETA0</name>
+        <defaultValue>-1.78923</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>WORKPLACE_BETAA</name>
+        <defaultValue>-0.03557</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>WORKPLACE_BETAS</name>
+        <defaultValue>0.16305</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>WORKPLACE_BETAAS</name>
+        <defaultValue>0.04272</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>WORKPLACE_A</name>
+        <defaultValue>3</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>WORKPLACE_DUR</name>
+        <defaultValue>8</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>WORKPLACE_SIZE</name>
+        <defaultValue>20</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>WORKPLACE_V</name>
+        <defaultValue>40</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>HOUSEHOLDS</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>BARS</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>RR_AS_F_46</name>
+        <defaultValue>0.50</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>RR_AS_F_26</name>
+        <defaultValue>1.25</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>RR_AS_F_18</name>
+        <defaultValue>1.00</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>RR_AS_M_46</name>
+        <defaultValue>1.25</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>RR_AS_M_26</name>
+        <defaultValue>3.75</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>RR_AS_M_18</name>
+        <defaultValue>1.00</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_BETA0</name>
+        <defaultValue>-1.80628</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_BETAA</name>
+        <defaultValue>-0.02073</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_BETAS</name>
+        <defaultValue>-0.02073</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_BETAAS</name>
+        <defaultValue>0.02204</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>BAR_SIZE</name>
+        <defaultValue>20</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>SCHOOL_SIZE</name>
+        <defaultValue>40</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_A</name>
+        <defaultValue>3</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_V</name>
+        <defaultValue>40</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>SCHOOL_A</name>
+        <defaultValue>3</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>SCHOOL_V</name>
+        <defaultValue>40</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>SEED</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>HOUSEHOLD_EXP</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CHURCH_EXP</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>TRANSPORT_EXP</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CLINIC_EXP</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>WORKPLACE_EXP</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_EXP</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>SCHOOL_EXP</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>PROB</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_M_PROB1</name>
+        <defaultValue>0.22</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_M_PROB2</name>
+        <defaultValue>0.37</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_M_PROB3</name>
+        <defaultValue>0.51</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_M_PROB4</name>
+        <defaultValue>0.59</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_M_PROB5</name>
+        <defaultValue>0.63</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_M_PROB7</name>
+        <defaultValue>0.74</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_F_PROB1</name>
+        <defaultValue>0.23</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_F_PROB2</name>
+        <defaultValue>0.38</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_F_PROB3</name>
+        <defaultValue>0.55</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_F_PROB4</name>
+        <defaultValue>0.62</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_F_PROB5</name>
+        <defaultValue>0.67</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_F_PROB7</name>
+        <defaultValue>0.71</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>CLINIC_DUR</name>
+        <defaultValue>3</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>BAR_DUR</name>
+        <defaultValue>90</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>SCHOOL_DUR</name>
+        <defaultValue>6</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>VISITING_DUR</name>
+        <defaultValue>40</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>unsigned int</type>
+        <name>OUTPUT_ID</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+      <gpu:variable>
+        <type>float</type>
+        <name>E</name>
+        <defaultValue>0</defaultValue>
+      </gpu:variable>
+    </gpu:constants>
+
+    <!-- Files of C code with initialisation, step and exit functions -->
+    <gpu:functionFiles>
+      <file>functions.c</file>
+    </gpu:functionFiles>
+
+    <!-- Functions that will run at the start of the simulation -->
+    <gpu:initFunctions>
+      <gpu:initFunction>
+        <gpu:name>initialiseHost</gpu:name>
+      </gpu:initFunction>
+      <gpu:initFunction>
+        <gpu:name>generateAgentsInit</gpu:name>
+      </gpu:initFunction>
+    </gpu:initFunctions>
+
+    <!-- Functions that will run at the end of the simulation -->
+    <gpu:exitFunctions>
+      <gpu:exitFunction>
+        <gpu:name>customOutputFunction</gpu:name>
+      </gpu:exitFunction>
+      <gpu:exitFunction>
+        <gpu:name>exitFunction</gpu:name>
+      </gpu:exitFunction>
+    </gpu:exitFunctions>
+
+    <gpu:graphs>
+      <gpu:staticGraph>
+        <gpu:name>network</gpu:name>
+        <gpu:description>A graph representing the network which agents exist on</gpu:description>
+        <gpu:loadFromFile>
+          <gpu:json>network.json</gpu:json>
+        </gpu:loadFromFile>
+        <gpu:vertex>
+          <variables>
+            <gpu:variable>
+              <type>unsigned int</type>
+              <name>id</name>
+              <defaultValue>0</defaultValue>
+            </gpu:variable>
+          </variables>
+          <gpu:bufferSize>8192</gpu:bufferSize>
+        </gpu:vertex>
+        <gpu:edge>
+          <variables>
+            <gpu:variable>
+              <type>unsigned int</type>
+              <name>id</name>
+              <defaultValue>0</defaultValue>
+            </gpu:variable>
+            <gpu:variable>
+              <type>unsigned int</type>
+              <name>source</name>
+              <defaultValue>0</defaultValue>
+            </gpu:variable>
+            <gpu:variable>
+              <type>unsigned int</type>
+              <name>destination</name>
+              <defaultValue>0</defaultValue>
+            </gpu:variable>
+          </variables>
+          <gpu:bufferSize>8192</gpu:bufferSize>
+        </gpu:edge>
+      </gpu:staticGraph>
+    </gpu:graphs>
+  </gpu:environment>
+  <xagents>
+
+    <!-- Types of agents, such as people and households -->
+    <gpu:xagent>
+      <name>Person</name>
+
+      <!-- The agent's memory, containing variables of various types -->
+      <memory>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>step</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>householdtime</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>churchtime</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>transporttime</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>clinictime</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>workplacetime</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>bartime</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>outsidetime</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>age</name>
+          <defaultValue>0</defaultValue>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>gender</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>householdsize</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>churchfreq</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>churchdur</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>transportdur</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>int</type>
+          <name>transportday1</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>int</type>
+          <name>transportday2</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>household</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>int</type>
+          <name>church</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>int</type>
+          <name>transport</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>int</type>
+          <name>workplace</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>int</type>
+          <name>school</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>busy</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>startstep</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>location</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>locationid</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>hiv</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>art</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>activetb</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>artday</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>p</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>q</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>infections</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>int</type>
+          <name>lastinfected</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>int</type>
+          <name>lastinfectedid</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>int</type>
+          <name>lastinfectedtime</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>lambda</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>timevisiting</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>bargoing</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>barday</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>schooltime</name>
+        </gpu:variable>
+      </memory>
+
+      <!-- Functions belonging to the agent -->
+      <functions>
+        <gpu:function>
+          <name>update</name>
+          <currentState>s2</currentState>
+          <nextState>s2</nextState>
+          <outputs>
+            <gpu:output>
+              <messageName>location</messageName>
+              <gpu:type>optional_message</gpu:type>
+            </gpu:output>
+          </outputs>
+          <gpu:reallocate>false</gpu:reallocate>
+          <gpu:RNG>true</gpu:RNG>
+        </gpu:function>
+        <gpu:function>
+          <name>updatelambda</name>
+          <currentState>s2</currentState>
+          <nextState>s2</nextState>
+          <inputs>
+            <gpu:input>
+              <messageName>infection</messageName>
+            </gpu:input>
+          </inputs>
+          <gpu:reallocate>false</gpu:reallocate>
+          <gpu:RNG>false</gpu:RNG>
+        </gpu:function>
+        <gpu:function>
+          <name>infect</name>
+          <currentState>s2</currentState>
+          <nextState>s2</nextState>
+          <condition>
+            <lhs>
+              <condition>
+                <lhs>
+                  <condition>
+                    <lhs>
+                      <condition>
+                        <lhs>
+                          <agentVariable>lambda</agentVariable>
+                        </lhs>
+                        <operator>==</operator>
+                        <rhs>
+                          <value>0.0</value>
+                        </rhs>
+                      </condition>
+                    </lhs>
+                    <operator>||</operator>
+                    <rhs>
+                      <condition>
+                        <lhs>
+                          <agentVariable>location</agentVariable>
+                        </lhs>
+                        <operator>==</operator>
+                        <rhs>
+                          <value>7</value>
+                        </rhs>
+                      </condition>
+                    </rhs>
+                  </condition>
+                </lhs>
+                <operator>||</operator>
+                <rhs>
+                  <condition>
+                    <lhs>
+                      <agentVariable>activetb</agentVariable>
+                    </lhs>
+                    <operator>==</operator>
+                    <rhs>
+                      <value>1</value>
+                    </rhs>
+                  </condition>
+                </rhs>
+              </condition>
+            </lhs>
+            <operator>==</operator>
+            <rhs>
+              <value>0</value>
+            </rhs>
+          </condition>
+          <gpu:reallocate>false</gpu:reallocate>
+          <gpu:RNG>true</gpu:RNG>
+        </gpu:function>
+        <gpu:function>
+          <name>personhhinit</name>
+          <currentState>default</currentState>
+          <nextState>s2</nextState>
+          <inputs>
+            <gpu:input>
+              <messageName>household_membership</messageName>
+            </gpu:input>
+          </inputs>
+          <gpu:reallocate>false</gpu:reallocate>
+          <gpu:RNG>false</gpu:RNG>
+        </gpu:function>
+        <gpu:function>
+          <name>persontbinit</name>
+          <currentState>default</currentState>
+          <nextState>default</nextState>
+          <inputs>
+            <gpu:input>
+              <messageName>tb_assignment</messageName>
+            </gpu:input>
+          </inputs>
+          <gpu:reallocate>false</gpu:reallocate>
+          <gpu:RNG>true</gpu:RNG>
+        </gpu:function>
+      </functions>
+
+      <!-- States that the agent can be in during a given iteration -->
+      <states>
+        <gpu:state>
+          <name>default</name>
+        </gpu:state>
+        <gpu:state>
+          <name>s2</name>
+        </gpu:state>
+        <initialState>default</initialState>
+      </states>
+
+      <!-- Whether the agent is continuous or discrete -->
+      <gpu:type>continuous</gpu:type>
+
+      <!-- The buffer size that should be allocated to the agent - unpredictable results if too many agents generated -->
+      <gpu:bufferSize>32768</gpu:bufferSize>
+    </gpu:xagent>
+
+    <gpu:xagent>
+      <name>TBAssignment</name>
+
+      <memory>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>id</name>
+        </gpu:variable>
+      </memory>
+
+      <functions>
+        <gpu:function>
+          <name>tbinit</name>
+          <currentState>tbdefault</currentState>
+          <nextState>tbdefault</nextState>
+          <outputs>
+            <gpu:output>
+              <messageName>tb_assignment</messageName>
+              <gpu:type>single_message</gpu:type>
+            </gpu:output>
+          </outputs>
+          <gpu:reallocate>true</gpu:reallocate>
+          <gpu:RNG>false</gpu:RNG>
+        </gpu:function>
+      </functions>
+
+      <states>
+        <gpu:state>
+          <name>tbdefault</name>
+        </gpu:state>
+        <initialState>tbdefault</initialState>
+      </states>
+
+      <gpu:type>continuous</gpu:type>
+
+      <gpu:bufferSize>32768</gpu:bufferSize>
+    </gpu:xagent>
+
+    <gpu:xagent>
+      <name>Household</name>
+
+      <memory>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>lambda</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>active</name>
+        </gpu:variable>
+      </memory>
+
+      <functions>
+        <gpu:function>
+          <name>hhupdate</name>
+          <currentState>hhdefault</currentState>
+          <nextState>hhdefault</nextState>
+          <inputs>
+            <gpu:input>
+              <messageName>location</messageName>
+            </gpu:input>
+          </inputs>
+          <outputs>
+            <gpu:output>
+              <messageName>infection</messageName>
+              <gpu:type>single_message</gpu:type>
+            </gpu:output>
+          </outputs>
+          <condition>
+            <lhs>
+              <agentVariable>active</agentVariable>
+            </lhs>
+            <operator>==</operator>
+            <rhs>
+              <value>1</value>
+            </rhs>
+          </condition>
+          <gpu:reallocate>false</gpu:reallocate>
+          <gpu:RNG>false</gpu:RNG>
+        </gpu:function>
+      </functions>
+
+      <states>
+        <gpu:state>
+          <name>hhdefault</name>
+        </gpu:state>
+        <initialState>hhdefault</initialState>
+      </states>
+
+      <gpu:type>continuous</gpu:type>
+
+      <gpu:bufferSize>8192</gpu:bufferSize>
+    </gpu:xagent>
+
+    <gpu:xagent>
+      <name>HouseholdMembership</name>
+
+      <memory>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>household_id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>person_id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>household_size</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>churchgoing</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>churchfreq</name>
+        </gpu:variable>
+      </memory>
+
+      <functions>
+        <gpu:function>
+          <name>hhinit</name>
+          <currentState>hhmembershipdefault</currentState>
+          <nextState>hhmembershipdefault</nextState>
+          <inputs>
+            <gpu:input>
+              <messageName>church_membership</messageName>
+            </gpu:input>
+          </inputs>
+          <outputs>
+            <gpu:output>
+              <messageName>household_membership</messageName>
+              <gpu:type>single_message</gpu:type>
+            </gpu:output>
+          </outputs>
+          <gpu:reallocate>true</gpu:reallocate>
+          <gpu:RNG>false</gpu:RNG>
+        </gpu:function>
+      </functions>
+
+      <states>
+        <gpu:state>
+          <name>hhmembershipdefault</name>
+        </gpu:state>
+        <initialState>hhmembershipdefault</initialState>
+      </states>
+
+      <gpu:type>continuous</gpu:type>
+
+      <gpu:bufferSize>32768</gpu:bufferSize>
+    </gpu:xagent>
+
+    <gpu:xagent>
+      <name>Church</name>
+
+      <memory>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>size</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>lambda</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>active</name>
+        </gpu:variable>
+      </memory>
+
+      <functions>
+        <gpu:function>
+          <name>chuupdate</name>
+          <currentState>chudefault</currentState>
+          <nextState>chudefault</nextState>
+          <inputs>
+            <gpu:input>
+              <messageName>location</messageName>
+            </gpu:input>
+          </inputs>
+          <outputs>
+            <gpu:output>
+              <messageName>infection</messageName>
+              <gpu:type>single_message</gpu:type>
+            </gpu:output>
+          </outputs>
+          <condition>
+            <lhs>
+              <agentVariable>active</agentVariable>
+            </lhs>
+            <operator>==</operator>
+            <rhs>
+              <value>1</value>
+            </rhs>
+          </condition>
+          <gpu:reallocate>false</gpu:reallocate>
+          <gpu:RNG>false</gpu:RNG>
+        </gpu:function>
+      </functions>
+
+      <states>
+        <gpu:state>
+          <name>chudefault</name>
+        </gpu:state>
+        <initialState>chudefault</initialState>
+      </states>
+
+      <gpu:type>continuous</gpu:type>
+
+      <gpu:bufferSize>256</gpu:bufferSize>
+    </gpu:xagent>
+
+    <gpu:xagent>
+      <name>ChurchMembership</name>
+
+      <memory>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>church_id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>household_id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>churchdur</name>
+        </gpu:variable>
+      </memory>
+
+      <functions>
+        <gpu:function>
+          <name>chuinit</name>
+          <currentState>chumembershipdefault</currentState>
+          <nextState>chumembershipdefault</nextState>
+          <outputs>
+            <gpu:output>
+              <messageName>church_membership</messageName>
+              <gpu:type>single_message</gpu:type>
+            </gpu:output>
+          </outputs>
+          <gpu:reallocate>true</gpu:reallocate>
+          <gpu:RNG>false</gpu:RNG>
+        </gpu:function>
+      </functions>
+
+      <states>
+        <gpu:state>
+          <name>chumembershipdefault</name>
+        </gpu:state>
+        <initialState>chumembershipdefault</initialState>
+      </states>
+
+      <gpu:type>continuous</gpu:type>
+
+      <gpu:bufferSize>8192</gpu:bufferSize>
+    </gpu:xagent>
+
+    <gpu:xagent>
+      <name>Transport</name>
+
+      <memory>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>lambda</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>active</name>
+        </gpu:variable>
+      </memory>
+
+      <functions>
+        <gpu:function>
+          <name>trupdate</name>
+          <currentState>trdefault</currentState>
+          <nextState>trdefault</nextState>
+          <inputs>
+            <gpu:input>
+              <messageName>location</messageName>
+            </gpu:input>
+          </inputs>
+          <outputs>
+            <gpu:output>
+              <messageName>infection</messageName>
+              <gpu:type>single_message</gpu:type>
+            </gpu:output>
+          </outputs>
+          <condition>
+            <lhs>
+              <agentVariable>active</agentVariable>
+            </lhs>
+            <operator>==</operator>
+            <rhs>
+              <value>1</value>
+            </rhs>
+          </condition>
+          <gpu:reallocate>false</gpu:reallocate>
+          <gpu:RNG>false</gpu:RNG>
+        </gpu:function>
+      </functions>
+
+      <states>
+        <gpu:state>
+          <name>trdefault</name>
+        </gpu:state>
+        <initialState>trdefault</initialState>
+      </states>
+
+      <gpu:type>continuous</gpu:type>
+
+      <gpu:bufferSize>2048</gpu:bufferSize>
+    </gpu:xagent>
+
+   
+
+    <gpu:xagent>
+      <name>Clinic</name>
+
+      <memory>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>lambda</name>
+        </gpu:variable>
+      </memory>
+
+      <functions>
+        <gpu:function>
+          <name>clupdate</name>
+          <currentState>cldefault</currentState>
+          <nextState>cldefault</nextState>
+          <inputs>
+            <gpu:input>
+              <messageName>location</messageName>
+            </gpu:input>
+          </inputs>
+          <outputs>
+            <gpu:output>
+              <messageName>infection</messageName>
+              <gpu:type>optional_message</gpu:type>
+            </gpu:output>
+          </outputs>
+          <gpu:reallocate>false</gpu:reallocate>
+          <gpu:RNG>false</gpu:RNG>
+        </gpu:function>
+      </functions>
+
+      <states>
+        <gpu:state>
+          <name>cldefault</name>
+        </gpu:state>
+        <initialState>cldefault</initialState>
+      </states>
+
+      <gpu:type>continuous</gpu:type>
+
+      <gpu:bufferSize>2</gpu:bufferSize>
+    </gpu:xagent>
+
+    <gpu:xagent>
+      <name>Workplace</name>
+
+      <memory>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>lambda</name>
+        </gpu:variable>
+      </memory>
+
+      <functions>
+        <gpu:function>
+          <name>wpupdate</name>
+          <currentState>wpdefault</currentState>
+          <nextState>wpdefault</nextState>
+          <inputs>
+            <gpu:input>
+              <messageName>location</messageName>
+            </gpu:input>
+          </inputs>
+          <outputs>
+            <gpu:output>
+              <messageName>infection</messageName>
+              <gpu:type>optional_message</gpu:type>
+            </gpu:output>
+          </outputs>
+          <gpu:reallocate>false</gpu:reallocate>
+          <gpu:RNG>false</gpu:RNG>
+        </gpu:function>
+      </functions>
+
+      <states>
+        <gpu:state>
+          <name>wpdefault</name>
+        </gpu:state>
+        <initialState>wpdefault</initialState>
+      </states>
+
+      <gpu:type>continuous</gpu:type>
+
+      <gpu:bufferSize>8192</gpu:bufferSize>
+    </gpu:xagent>
+
+
+    <gpu:xagent>
+      <name>Bar</name>
+
+      <memory>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>lambda</name>
+        </gpu:variable>
+      </memory>
+
+      <functions>
+        <gpu:function>
+          <name>bupdate</name>
+          <currentState>bdefault</currentState>
+          <nextState>bdefault</nextState>
+          <inputs>
+            <gpu:input>
+              <messageName>location</messageName>
+            </gpu:input>
+          </inputs>
+          <outputs>
+            <gpu:output>
+              <messageName>infection</messageName>
+              <gpu:type>optional_message</gpu:type>
+            </gpu:output>
+          </outputs>
+          <gpu:reallocate>false</gpu:reallocate>
+          <gpu:RNG>false</gpu:RNG>
+        </gpu:function>
+      </functions>
+
+      <states>
+        <gpu:state>
+          <name>bdefault</name>
+        </gpu:state>
+        <initialState>bdefault</initialState>
+      </states>
+
+      <gpu:type>continuous</gpu:type>
+
+      <gpu:bufferSize>4096</gpu:bufferSize>
+    </gpu:xagent>
+
+    <gpu:xagent>
+      <name>School</name>
+
+      <memory>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>lambda</name>
+        </gpu:variable>
+      </memory>
+
+      <functions>
+        <gpu:function>
+          <name>schupdate</name>
+          <currentState>schdefault</currentState>
+          <nextState>schdefault</nextState>
+          <inputs>
+            <gpu:input>
+              <messageName>location</messageName>
+            </gpu:input>
+          </inputs>
+          <outputs>
+            <gpu:output>
+              <messageName>infection</messageName>
+              <gpu:type>optional_message</gpu:type>
+            </gpu:output>
+          </outputs>
+          <gpu:reallocate>false</gpu:reallocate>
+          <gpu:RNG>false</gpu:RNG>
+        </gpu:function>
+      </functions>
+
+      <states>
+        <gpu:state>
+          <name>schdefault</name>
+        </gpu:state>
+        <initialState>schdefault</initialState>
+      </states>
+
+      <gpu:type>continuous</gpu:type>
+
+      <gpu:bufferSize>2048</gpu:bufferSize>
+    </gpu:xagent>
+
+  </xagents>
+
+  <!-- Messages sent by agents which can be read by other agents -->
+  <messages>
+
+    <gpu:message>
+      <name>tb_assignment</name>
+      <description>A message declaring that a person has active TB</description>
+      <variables>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>id</name>
+        </gpu:variable>
+      </variables>
+      <gpu:partitioningNone/>
+      <gpu:bufferSize>32768</gpu:bufferSize>
+    </gpu:message>
+
+    <gpu:message>
+      <name>household_membership</name>
+      <description>A message declaring that a person is a member of a household</description>
+      <variables>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>household_id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>person_id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>household_size</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>church_id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>churchfreq</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>churchdur</name>
+        </gpu:variable>
+      </variables>
+      <gpu:partitioningNone/>
+      <gpu:bufferSize>32768</gpu:bufferSize>
+    </gpu:message>
+
+    <gpu:message>
+      <name>church_membership</name>
+      <description>A message declaring that a household is a member of a church</description>
+      <variables>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>church_id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>household_id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>churchdur</name>
+        </gpu:variable>
+      </variables>
+      <gpu:partitioningNone/>
+      <gpu:bufferSize>8192</gpu:bufferSize>
+    </gpu:message>
+
+   
+
+    <gpu:message>
+      <name>location</name>
+      <description>A message declaring that a person is in a given location at a given time</description>
+      <variables>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>person_id</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>location</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>locationid</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>p</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>q</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>edge_id</name>
+          <description>The unique ID of the edge within the network graph</description>
+        </gpu:variable>
+      </variables>
+      <gpu:partitioningGraphEdge>
+        <gpu:environmentGraph>network</gpu:environmentGraph>
+        <gpu:messageEdgeID>edge_id</gpu:messageEdgeID>
+      </gpu:partitioningGraphEdge>
+      <gpu:bufferSize>32768</gpu:bufferSize>
+    </gpu:message>
+
+    <gpu:message>
+      <name>infection</name>
+      <description>A message containing the lambda value for a given location at a given time</description>
+      <variables>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>locationid</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>float</type>
+          <name>lambda</name>
+        </gpu:variable>
+        <gpu:variable>
+          <type>unsigned int</type>
+          <name>edge_id</name>
+        </gpu:variable>
+      </variables>
+      <gpu:partitioningGraphEdge>
+        <gpu:environmentGraph>network</gpu:environmentGraph>
+        <gpu:messageEdgeID>edge_id</gpu:messageEdgeID>
+      </gpu:partitioningGraphEdge>
+      <gpu:bufferSize>16384</gpu:bufferSize>
+    </gpu:message>
+
+  </messages>
+
+  <layers>
+
+    <layer>
+      <gpu:layerFunction>
+        <name>update</name>
+      </gpu:layerFunction>
+    </layer>
+
+    <layer>
+      <gpu:layerFunction>
+        <name>hhupdate</name>
+      </gpu:layerFunction>
+  
+      <gpu:layerFunction>
+        <name>chuupdate</name>
+      </gpu:layerFunction>
+   
+      <gpu:layerFunction>
+        <name>trupdate</name>
+      </gpu:layerFunction>
+    
+      <gpu:layerFunction>
+        <name>clupdate</name>
+      </gpu:layerFunction>
+   
+      <gpu:layerFunction>
+        <name>wpupdate</name>
+      </gpu:layerFunction>
+   
+      <gpu:layerFunction>
+        <name>bupdate</name>
+      </gpu:layerFunction>
+  
+      <gpu:layerFunction>
+        <name>schupdate</name>
+      </gpu:layerFunction>
+    </layer>
+
+    <layer>
+      <gpu:layerFunction>
+        <name>updatelambda</name>
+      </gpu:layerFunction>
+    </layer>
+
+    <layer>
+      <gpu:layerFunction>
+        <name>infect</name>
+      </gpu:layerFunction>
+    </layer>
+
+
+    <layer>
+      <gpu:layerFunction>
+        <name>tbinit</name>
+      </gpu:layerFunction>
+    
+      <gpu:layerFunction>
+        <name>chuinit</name>
+      </gpu:layerFunction>
+    
+      <gpu:layerFunction>
+        <name>hhinit</name>
+      </gpu:layerFunction>
+   
+    </layer>
+
+    <layer>
+      <gpu:layerFunction>
+        <name>persontbinit</name>
+      </gpu:layerFunction>
+   
+      <gpu:layerFunction>
+        <name>personhhinit</name>
+      </gpu:layerFunction>
+    </layer>
+  </layers>
+
+</gpu:xmodel>
+
