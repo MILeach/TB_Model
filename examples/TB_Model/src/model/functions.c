@@ -1468,6 +1468,9 @@ __FLAME_GPU_EXIT_FUNC__ void customOutputFunction()
               get_Person_s2_variable_lastinfectedtime(index));
 
 	  int infectedtime = get_Person_s2_variable_lastinfectedtime(index);
+	  if (infectedtime == -1) {
+		  infectionFreq[0] += 1;
+	  }
 	  if (infectedtime >= 0) {
 		  infectionFreq[infectedtime / 5] += 1;
 	  }
