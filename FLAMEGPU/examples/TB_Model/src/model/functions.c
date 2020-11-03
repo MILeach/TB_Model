@@ -9,8 +9,13 @@
 #include <vector>
 #include <fstream>
 
-#include <direct.h>
-#define GetCurrentDir _getcwd
+#ifdef WIN32
+    #include <direct.h>
+    #define GetCurrentDir _getcwd
+#else
+    #include <unistd.h>
+    #define GetCurrentDir getcwd
+#endif
 
 // Uncomment to enable profiling logging in the console
 //#define INSTRUMENT_INIT_FUNCTIONS 1 // Initialisation time
