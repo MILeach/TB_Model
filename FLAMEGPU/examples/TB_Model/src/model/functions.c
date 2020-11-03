@@ -1842,7 +1842,6 @@ __FLAME_GPU_FUNC__ int infect(xmachine_memory_Person *person,
     person->lastinfected = person->location;
     person->lastinfectedid = person->locationid;
     person->lastinfectedtime = person->step * 5 * TIME_STEP;
-	person->activetb = true;
 	printf("New infection\n");
   }
 
