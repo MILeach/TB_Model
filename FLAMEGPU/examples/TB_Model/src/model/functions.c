@@ -1866,7 +1866,7 @@ __FLAME_GPU_FUNC__ int infect(xmachine_memory_Person *person,
    location_message->location is the type of place, e.g. bar, church, household. */
 __FLAME_GPU_FUNC__ int
 hhupdate(xmachine_memory_Household *household,
-         machine_message_location_list *location_messages,
+         xmachine_message_location_list *location_messages,
 		 xmachine_message_location_bounds* message_bounds,
          xmachine_message_infection_list *infection_messages)
 {
