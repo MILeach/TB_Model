@@ -8,6 +8,5 @@
 
 module load CUDA/10.0.130
 
-cd FLAMEGPU/examples/TB_Model
-make console SMS=70
-~                        
+cd ~/TB_Model/FLAMEGPU/examples/TB_Model
+make console SMS=60

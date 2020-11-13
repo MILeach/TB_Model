@@ -1908,7 +1908,7 @@ chuupdate(xmachine_memory_Church *church,
 
    while (location_message)
   {
-	   printf("q: %f \n", location_message->q);
+	   //printf("q: %f \n", location_message->q);
     qsum += location_message->q;
     location_message =
         get_next_location_message(location_message, location_messages, message_bounds);

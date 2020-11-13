@@ -8,6 +8,5 @@
 
 module load CUDA/10.0.130
 
-cd FLAMEGPU/examples/TB_Model
+cd ~/TB_Model/FLAMEGPU/examples/TB_Model
 ./bin/linux-x64/Release_Console/Project $1 $2 XML_output_frequency 0
-
