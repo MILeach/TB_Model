@@ -22,7 +22,7 @@
 //#define INSTRUMENT_AGENT_FUNCTIONS 1 // Time for each agent function
 //#define INSTRUMENT_ITERATIONS 1 // Time for each iteration
 
-
+//#define MEGACHURCH_TEST 1
 #define OUTPUT_POPULATION_PER_ITERATION 0
 
 // HOUSEHOLD = 0, CHURCH = 1 etc.
@@ -347,6 +347,9 @@ PopulationInfo readInputFile() {
 
 	populationInfo.householdSizes = (unsigned int*)malloc(sizeof(int)*populationInfo.numHouseholdSizes);
 	populationInfo.numPeopleInHouseholdSize = (unsigned int*)malloc(sizeof(unsigned int)*populationInfo.numHouseholdSizes);
+        for (unsigned int i = 0; i < populationInfo.numHouseholdSizes; i++) {
+            populationInfo.numPeopleInHouseholdSize[i] = 0;
+        }
 	populationInfo.ageGenderCategories = (AgeGenderCategory*)malloc(sizeof(AgeGenderCategory)*populationInfo.numAgeGenderCategories);
 
 	for (int i = 0; i < populationInfo.numAgeGenderCategories; i++) {
@@ -355,7 +358,6 @@ PopulationInfo readInputFile() {
 		// input.)
 		populationInfo.ageGenderCategories[i].gender = strtol(fgets(line, sizeof(line), file), NULL, 0);
 		populationInfo.ageGenderCategories[i].minage = strtol(fgets(line, sizeof(line), file), NULL, 0);
-		populationInfo.numPeopleInHouseholdSize[i] = 0;
 
 		// Add one to minage unless minage is 0? Why? TODO: Check with Pete Dodd if this is correct
 		if ((int)populationInfo.ageGenderCategories[i].minage != 0)
@@ -381,7 +383,7 @@ PopulationInfo readInputFile() {
 			// from the histogram.
 			populationInfo.householdSizes[j] = strtol(fgets(line, sizeof(line), file), NULL, 0);
 			populationInfo.ageGenderCategories[i].numPeopleInHouseholdSize[j] = strtof(fgets(line, sizeof(line), file), NULL);
-			populationInfo.numPeopleInHouseholdSize[i] += populationInfo.ageGenderCategories[i].numPeopleInHouseholdSize[j];
+			populationInfo.numPeopleInHouseholdSize[j] += populationInfo.ageGenderCategories[i].numPeopleInHouseholdSize[j];
 		}
 
 	}
@@ -408,8 +410,8 @@ void initAgentTypes() {
 	h_bar_AoS = h_allocate_agent_Bar_array(h_bar_AoS_MAX);
 	h_tbassignment_AoS =
 		h_allocate_agent_TBAssignment_array(h_tbassignment_AoS_MAX);
-	h_hhmembership_AoS =
-		h_allocate_agent_HouseholdMembership_array(h_hhmembership_AoS_MAX);
+	//h_hhmembership_AoS =
+	//	h_allocate_agent_HouseholdMembership_array(h_hhmembership_AoS_MAX);
 	h_chumembership_AoS =
 		h_allocate_agent_ChurchMembership_array(h_chumembership_AoS_MAX);
 }
@@ -755,7 +757,6 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 	// the histogram.
 	for (unsigned int i = 0; i < populationInfo.numAgeGenderCategories; i++)
 	{
-                printf("New category\n");
 		int gender = populationInfo.ageGenderCategories[i].gender;
 		int maxage = populationInfo.ageGenderCategories[i].maxage;
 		int minage = populationInfo.ageGenderCategories[i].minage;
@@ -772,9 +773,6 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 			// will match the starting population specified in the input.
 			float frac = amount / populationInfo.totalPopulationSize;
 			unsigned int rounded = round(((float)amount / populationInfo.totalPopulationSize) * starting_population);
-                        printf("Amount %d, total pop size %d, starting pop %d", amount, populationInfo.totalPopulationSize, starting_population);
-                        printf("Rounded : %d\n", rounded);
-
 			// This loop runs once for each individual person, and so this is where we
 			// generate the person agents.
 			for (unsigned int k = 0; k < rounded; k++)
@@ -788,6 +786,8 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 				h_person->gender = gender;
 				h_person->householdsize = currentsize;
 				h_person->busy = 0;
+                                h_person->school = -1;
+                                h_person->workplace = -1;
 
 				decideAgeHivArt(h_person, dh, populationInfo, minage, maxage, gender);
 				decideTransport(h_person, dh);
@@ -807,7 +807,6 @@ void initPeople(const PopulationInfo& populationInfo, DataHolder& dh) {
 			}
 		}
 	}
-        printf("Created %d people\n", personCounter);
 }
 
 
@@ -832,11 +831,11 @@ void initHouseholds(const PopulationInfo& populationInfo, DataHolder& dh) {
 	// Compute total number of households required
 	int numHouseholds = 0;
 	for (unsigned int i = 0; i < populationInfo.numHouseholdSizes; i++)
-		for (unsigned int j = 0; j < populationInfo.numPeopleInHouseholdSize[i] / populationInfo.householdSizes[i]; j++)
+		for (unsigned int j = 0; j < populationInfo.numPeopleInHouseholdSize[i] / populationInfo.householdSizes[i]; j++) { 
 			numHouseholds++;
-
+        }
 	xmachine_memory_Household** h_household_AoS = h_allocate_agent_Household_array(numHouseholds);
-	xmachine_memory_HouseholdMembership** h_HouseholdMemmbership_AoS = h_allocate_agent_HouseholdMembership_array(populationInfo.totalPopulationSize);
+	xmachine_memory_HouseholdMembership** h_HouseholdMembership_AoS = h_allocate_agent_HouseholdMembership_array(populationInfo.totalPopulationSize);
 	unsigned int hhmembershipCounter = 0;
 	unsigned int householdCounter = 0;
 
@@ -915,9 +914,9 @@ void initHouseholds(const PopulationInfo& populationInfo, DataHolder& dh) {
 
 			// Allocate individual people to the household until it is full, keeping
 			// track of how many of them are adults.
-			for (unsigned int k = 0; k < i; k++)
+			for (unsigned int k = 0; k < populationInfo.householdSizes[i]; k++)
 			{
-				xmachine_memory_HouseholdMembership *h_hhmembership = h_HouseholdMemmbership_AoS[hhmembershipCounter];
+				xmachine_memory_HouseholdMembership *h_hhmembership = h_HouseholdMembership_AoS[hhmembershipCounter];
 				h_hhmembership->household_id = h_household->id;
 				h_hhmembership->person_id = dh.order[dh.count];
 				h_hhmembership->churchgoing = churchgoing;
@@ -954,8 +953,8 @@ void initHouseholds(const PopulationInfo& populationInfo, DataHolder& dh) {
 
 	h_add_agents_Household_hhdefault(h_household_AoS, householdCounter);
 	h_free_agent_Household_array(&h_household_AoS, householdCounter);
-	h_add_agents_HouseholdMembership_hhmembershipdefault(h_hhmembership_AoS, hhmembershipCounter);
-	h_free_agent_HouseholdMembership_array(&h_hhmembership_AoS, hhmembershipCounter);
+	h_add_agents_HouseholdMembership_hhmembershipdefault(h_HouseholdMembership_AoS, hhmembershipCounter);
+	h_free_agent_HouseholdMembership_array(&h_HouseholdMembership_AoS, hhmembershipCounter);
 }
 
 void allocateTransport(const DataHolder& dh, const PopulationInfo& populationInfo) {
@@ -1077,7 +1076,9 @@ void allocateChurches(DataHolder& dh) {
 	unsigned int church_k3 = *get_CHURCH_K3();
 
 	float church_proportion = *get_CHURCH_PROPORTION();
-
+#ifdef MEGACHURCH_TEST
+       	church_proportion = 1.0f;
+#endif
 	// Generate an array of household ids and then shuffle it, for use when
   // generating churches and other buildings.
 	unsigned int hhtotal = get_agent_Household_hhdefault_count();
@@ -1366,10 +1367,6 @@ __FLAME_GPU_INIT_FUNC__ void initialiseHost()
 
   initAgentTypes();
 
-  initPeople(populationInfo, dh);
-
-  shuffle(dh.transport, dh.days, h_agent_AoS_MAX);
-
   // Set a counter for our current position in the array of person ids, to
   // keep track as we generate households.
   dh.count = 0;
@@ -1385,8 +1382,12 @@ __FLAME_GPU_INIT_FUNC__ void initialiseHost()
     dh.order[i] = i;
   }
 
-  shuffle(dh.order, dh.sizesarray, dh.total);
-  quickSort(dh.sizesarray, dh.order, 0, dh.total);
+  //shuffle(dh.order, dh.sizesarray, dh.total);
+  //quickSort(dh.sizesarray, dh.order, 0, dh.total);
+  initPeople(populationInfo, dh);
+
+  shuffle(dh.transport, dh.days, dh.total);
+
 
   allocateTB(dh);
   initHouseholds(populationInfo, dh);
@@ -1423,7 +1424,7 @@ __FLAME_GPU_EXIT_FUNC__ void customOutputFunction()
 
   // Array to track when infections took place
 	std::vector<int> infectionFreq;
-	infectionFreq.resize(500);
+	infectionFreq.resize(8000);
 
   // Assign a variable for the directory where our files will be output, and
   // check which iteration we are currently on.
@@ -1595,7 +1596,6 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
         person->busy = 1;
         person->location = 1;
         person->locationid = person->church;
-		printf("Gone to church");
       }
     }
 #ifndef MEGACHURCH_TEST
@@ -1810,7 +1810,7 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
 
 #ifdef MEGACHURCH_TEST
   person->location = CHURCH;
-  person->locationid = person->church;
+  person->locationid = 0;//person->church;
 #endif
 
   // If the person is an active carrier of TB, add a message stating their location
@@ -1902,19 +1902,19 @@ chuupdate(xmachine_memory_Church *church,
 {
   
   float qsum = 0;
-  //printf("CHURCH, church->id, locationToEdgeID: %u, %u, %u \n", CHURCH, church->id, locationToEdgeID(CHURCH, church->id));
+  printf("CHURCH, church->id, locationToEdgeID: %u, %u, %u \n", CHURCH, church->id, locationToEdgeID(CHURCH, church->id));
   xmachine_message_location *location_message =
       get_first_location_message(location_messages, message_bounds, locationToEdgeID(CHURCH, church->id));
 
    while (location_message)
   {
-	//   printf("q: %f \n", location_message->q);
+	   printf("q: %f \n", location_message->q);
     qsum += location_message->q;
     location_message =
         get_next_location_message(location_message, location_messages, message_bounds);
   }
 
-  //printf("Church qsum: %f", qsum);
+  printf("Church qsum: %f", qsum);
 
   // Lambda computed as: 
   // Previous lambda * decay factor + scaled qsum * (1-decay factor) 
@@ -2124,15 +2124,17 @@ persontbinit(xmachine_memory_Person *person,
              RNG_rand48 *rand48)
 {
   unsigned int personid = person->id;
-  float usum;
+  float usum = 0.0f;
 
   if (person->gender == 1)
   {
     person->p = DEFAULT_M_P;
+    printf("Male init\n");
   }
   else
   {
     person->p = DEFAULT_F_P;
+    printf("Female init\n");
   }
 
   for (unsigned int i = 0; i < DEFAULT_K; i++)
@@ -2144,6 +2146,7 @@ persontbinit(xmachine_memory_Person *person,
     usum += u;
   }
 
+  printf("usum: %f\n", usum);
   float u = rnd<CONTINUOUS>(rand48);
   float v = rnd<CONTINUOUS>(rand48);
   float w = rnd<CONTINUOUS>(rand48);
@@ -2179,7 +2182,6 @@ __FLAME_GPU_FUNC__ int personhhinit(
   xmachine_message_household_membership *household_membership_message =
       get_first_household_membership_message(household_membership_messages);
   unsigned int personid = person->id;
-
   while (household_membership_message)
   {
     if (household_membership_message->person_id == personid)
