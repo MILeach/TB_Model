@@ -1814,7 +1814,7 @@ __FLAME_GPU_FUNC__ int update(xmachine_memory_Person *person,
 #endif
 
   // If the person is an active carrier of TB, add a message stating their location
-  if (person->activetb == 1 && person->location == CHURCH)
+  if (person->activetb == 1)
   {
 	  
     add_location_message(location_messages, person->id, person->location,
@@ -1866,7 +1866,7 @@ __FLAME_GPU_FUNC__ int infect(xmachine_memory_Person *person,
    location_message->location is the type of place, e.g. bar, church, household. */
 __FLAME_GPU_FUNC__ int
 hhupdate(xmachine_memory_Household *household,
-         xmachine_message_location_list *location_messages,
+         machine_message_location_list *location_messages,
 		 xmachine_message_location_bounds* message_bounds,
          xmachine_message_infection_list *infection_messages)
 {
