@@ -1902,7 +1902,7 @@ chuupdate(xmachine_memory_Church *church,
 {
   
   float qsum = 0;
-  printf("CHURCH, church->id, locationToEdgeID: %u, %u, %u \n", CHURCH, church->id, locationToEdgeID(CHURCH, church->id));
+  //printf("CHURCH, church->id, locationToEdgeID: %u, %u, %u \n", CHURCH, church->id, locationToEdgeID(CHURCH, church->id));
   xmachine_message_location *location_message =
       get_first_location_message(location_messages, message_bounds, locationToEdgeID(CHURCH, church->id));
 
@@ -1914,7 +1914,7 @@ chuupdate(xmachine_memory_Church *church,
         get_next_location_message(location_message, location_messages, message_bounds);
   }
 
-  printf("Church qsum: %f", qsum);
+  //printf("Church qsum: %f", qsum);
 
   // Lambda computed as: 
   // Previous lambda * decay factor + scaled qsum * (1-decay factor) 
@@ -2129,12 +2129,12 @@ persontbinit(xmachine_memory_Person *person,
   if (person->gender == 1)
   {
     person->p = DEFAULT_M_P;
-    printf("Male init\n");
+    //printf("Male init\n");
   }
   else
   {
     person->p = DEFAULT_F_P;
-    printf("Female init\n");
+    //printf("Female init\n");
   }
 
   for (unsigned int i = 0; i < DEFAULT_K; i++)
@@ -2146,7 +2146,7 @@ persontbinit(xmachine_memory_Person *person,
     usum += u;
   }
 
-  printf("usum: %f\n", usum);
+  //printf("usum: %f\n", usum);
   float u = rnd<CONTINUOUS>(rand48);
   float v = rnd<CONTINUOUS>(rand48);
   float w = rnd<CONTINUOUS>(rand48);
