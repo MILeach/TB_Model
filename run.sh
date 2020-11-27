@@ -10,9 +10,11 @@ module load CUDA/10.0.130
 
 cd ~/TB_Model/FLAMEGPU/examples/TB_Model
 
-FILES = $1/*.xml
-for f in $FILES 
+for f in $1/*.xml
 do
   echo "Running file $f"
-  ./bin/linux-x64/Release_Console/Project $1 $2 XML_output_frequency 0
+  ./bin/linux-x64/Release_Console/Project $f $2 XML_output_frequency 0
+  outputFileName=$(basename $f .xml)
+  echo "Copying output to $outputFileName"
+  cp iterations/person-output-0.csv iterations/output/$outputFileName.csv
 done
