@@ -1,0 +1,9 @@
+<states>
+  <itno>0</itno>
+  <environment>
+    <STARTING_POPULATION>25001</STARTING_POPULATION>
+    <TIME_STEP>1.0</TIME_STEP>
+    <MAX_AGE>100</MAX_AGE>
+    <SEED>0</SEED>
+  </environment>
+</states>

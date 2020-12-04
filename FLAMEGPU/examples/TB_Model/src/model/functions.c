@@ -22,7 +22,7 @@
 //#define INSTRUMENT_AGENT_FUNCTIONS 1 // Time for each agent function
 //#define INSTRUMENT_ITERATIONS 1 // Time for each iteration
 
-//#define MEGACHURCH_TEST 1
+#define MEGACHURCH_TEST 1
 #define OUTPUT_POPULATION_PER_ITERATION 0
 
 // HOUSEHOLD = 0, CHURCH = 1 etc.
@@ -319,9 +319,9 @@ PopulationInfo readInputFile() {
 	// the data about people will be read in.
 	
 #ifdef WIN32
-        char const* const fileName = "iterations/data.in"; // "../../../examples/TB_Model/iterations/data.in"; //"data.in"
+        char const* const fileName = "input/data.in"; // "../../../examples/TB_Model/iterations/data.in"; //"data.in"
 #else
-        char const* const fileName = "iterations/data.in"; //"data.in"
+        char const* const fileName = "input/data.in"; // "../../../examples/TB_Model/iterations/data.in"; //"data.in"
 #endif
 	FILE *file = fopen(fileName, "r");
 	char line[256];
@@ -336,7 +336,6 @@ PopulationInfo readInputFile() {
 	       printf("File opened successfully\n");
 	}
 	
-	printf("File ptr: %p\n", file);
 
 	// Read in the total number of people, household sizes and age/gender
 	// categories, as these will be how many times we need to loop.
