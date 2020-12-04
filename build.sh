@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=dcs-collab
+#SBATCH --account=dcs-res
 #SBATCH --partition=dcs-gpu-test 
 #SBATCH --nodes=1 
 #SBATCH --gpus-per-node=1
