@@ -22,7 +22,7 @@
 //#define INSTRUMENT_AGENT_FUNCTIONS 1 // Time for each agent function
 //#define INSTRUMENT_ITERATIONS 1 // Time for each iteration
 
-#define MEGACHURCH_TEST 1
+//#define MEGACHURCH_TEST 1
 #define OUTPUT_POPULATION_PER_ITERATION 0
 
 // HOUSEHOLD = 0, CHURCH = 1 etc.
@@ -1313,8 +1313,7 @@ void setConstants() {
 	float workplace_exp = exp(-workplace_a * (time_step / 12));
 	float bar_exp = exp(-bar_a * (time_step / 12));
 	float school_exp = exp(-school_a * (time_step / 12));
-	// TODO: Check if this is correct - unlikely as it gives negative probability
-	float prob = 1.0f;// 1 - exp(6.0 / 365);
+	float prob = 1 - exp(6.0 / 365);
 
 	set_HOUSEHOLD_EXP(&household_exp);
 	set_CHURCH_EXP(&church_exp);

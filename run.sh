@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=res
+#SBATCH --account=dcs-res
 #SBATCH --partition=dcs-gpu-test 
 #SBATCH --nodes=1 
 #SBATCH --gpus-per-node=1
@@ -16,6 +16,7 @@ do
   ./FLAMEGPU/examples/TB_Model/bin/linux-x64/Release_Console/Project $f $2 XML_output_frequency 0
   outputFileName=$(basename $f .xml)
   echo "Copying output to $outputFileName"
+  mkdir output
   cd output
   mkdir $1
   cd ..
